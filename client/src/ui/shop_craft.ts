@@ -38,14 +38,20 @@ export class ShopCraftUI {
     this.close();
     this.isOpen = true;
 
-    // Collect all upgradeable weapons (equipped main hand + weapons in backpack)
-    const allWeapons: { item: Item; isEquipped: boolean }[] = [];
-    if (player.equipment.mainHand) {
-      allWeapons.push({ item: player.equipment.mainHand, isEquipped: true });
+    // Collect all upgradeable weapons (base weapon + equipped arsenal + weapons in backpack)
+    const allWeapons: { item: Item; isEquipped: boolean; slotBadge: string }[] = [];
+    if (player.baseWeapon) {
+      allWeapons.push({ item: player.baseWeapon, isEquipped: true, slotBadge: '⭐ BASE' });
     }
+    const equipped = player.getAllEquippedWeapons();
+    equipped.forEach((wpn, idx) => {
+      if (!allWeapons.some(w => w.item.id === wpn.id)) {
+        allWeapons.push({ item: wpn, isEquipped: true, slotBadge: `WPN ${idx + 1}` });
+      }
+    });
     player.inventory.forEach(item => {
-      if (item.type === 'weapon') {
-        allWeapons.push({ item, isEquipped: false });
+      if (item.type === 'weapon' && !allWeapons.some(w => w.item.id === item.id)) {
+        allWeapons.push({ item, isEquipped: false, slotBadge: '🎒' });
       }
     });
 
@@ -57,7 +63,7 @@ export class ShopCraftUI {
     }
 
     const activeWpnObj = allWeapons.find(w => w.item.id === this.selectedWeaponId);
-    const activeWpn = activeWpnObj ? activeWpnObj.item : player.equipment.mainHand;
+    const activeWpn = activeWpnObj ? activeWpnObj.item : (player.baseWeapon || player.equipment.mainHand);
 
     this.modalEl = document.createElement('div');
     this.modalEl.className = 'sampo-modal interactive';
@@ -89,7 +95,7 @@ export class ShopCraftUI {
               <button class="sampo-btn ${w.item.id === this.selectedWeaponId ? 'primary' : ''}" 
                 data-select-wpn="${w.item.id}"
                 style="padding:3px 8px; font-size:11px; ${w.item.id === this.selectedWeaponId ? 'border-color:var(--cyan-core);' : ''}">
-                ${w.isEquipped ? '🛡️ [Equipped] ' : ''}${w.item.name}
+                <span style="color:var(--gold-runic); font-weight:700; margin-right:4px;">[${w.slotBadge}]</span>${w.item.name}
               </button>
             `).join('')}
           </div>
@@ -376,16 +382,26 @@ export class ShopCraftUI {
     listEl.innerHTML = '';
 
     const socketGems = player.inventory.filter(i => i.type === 'socket_gem');
-    const equippedWeapon = player.equipment.mainHand;
+    
+    // Check all weapons equipped in arsenal, mainHand, or baseWeapon with open sockets
+    const candidateWeapons: { wpn: Item; label: string }[] = [];
+    if (player.baseWeapon) candidateWeapons.push({ wpn: player.baseWeapon, label: '⭐ Base Weapon' });
+    if (player.equipment.mainHand) candidateWeapons.push({ wpn: player.equipment.mainHand, label: '⚔️ Weapon 1 (Primary)' });
+    for (const slot of ['weapon2', 'weapon3', 'weapon4', 'weapon5'] as const) {
+      if (player.equipment[slot]) candidateWeapons.push({ wpn: player.equipment[slot]!, label: `⚔️ ${slot.toUpperCase()}` });
+    }
+
+    const targetCandidate = candidateWeapons.find(c => c.wpn.sockets && c.wpn.sockets.some((s: { filled: boolean }) => !s.filled)) || candidateWeapons[0];
+    const equippedWeapon = targetCandidate?.wpn;
 
     if (!equippedWeapon || !equippedWeapon.sockets || equippedWeapon.sockets.length === 0) {
       listEl.innerHTML = '<div style="font-size:12px; color:var(--text-dark);">Equip a Runic or Masterwork weapon with open sockets to perform infusion.</div>';
       return;
     }
 
-    const emptySocketIdx = equippedWeapon.sockets.findIndex(s => !s.filled);
+    const emptySocketIdx = equippedWeapon.sockets.findIndex((s: { filled: boolean }) => !s.filled);
     if (emptySocketIdx === -1) {
-      listEl.innerHTML = '<div style="font-size:12px; color:#10b981;">All sockets on equipped weapon are fully infused!</div>';
+      listEl.innerHTML = `<div style="font-size:12px; color:#10b981;">All sockets on ${targetCandidate.label} are fully infused!</div>`;
       return;
     }
 

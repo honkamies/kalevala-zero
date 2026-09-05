@@ -1,4 +1,4 @@
-import { Item, ItemSlot, DamageType, WeaponCategory, getWeaponCategory, getStarterWeaponForArchetype } from '../systems/items';
+import { Item, ItemSlot, DamageType, WeaponCategory, getWeaponCategory, getStarterWeaponForArchetype, isBaseWeaponMatchingArchetype } from '../systems/items';
 import { soundEngine } from '../engine/audio';
 import { particleSystem } from '../engine/particles';
 import { projectileManager } from './projectile';
@@ -36,6 +36,48 @@ export function getDefaultStatsForArchetype(archetype: string): PlayerStats {
   }
 }
 
+export const CUMULATIVE_WEAPON_SLOTS: ItemSlot[] = ['mainHand', 'weapon2', 'weapon3', 'weapon4', 'weapon5'];
+
+export interface WeaponSlotUnlockConfig {
+  slot: ItemSlot;
+  label: string;
+  reqLevel: number;
+  reqClears: number;
+}
+
+export const WEAPON_SLOT_UNLOCK_CONFIGS: WeaponSlotUnlockConfig[] = [
+  { slot: 'mainHand', label: 'WPN 1', reqLevel: 1, reqClears: 0 },
+  { slot: 'weapon2', label: 'WPN 2', reqLevel: 3, reqClears: 1 },
+  { slot: 'weapon3', label: 'WPN 3', reqLevel: 6, reqClears: 3 },
+  { slot: 'weapon4', label: 'WPN 4', reqLevel: 10, reqClears: 5 },
+  { slot: 'weapon5', label: 'WPN 5', reqLevel: 15, reqClears: 7 }
+];
+
+export interface AttackResult {
+  performed: boolean;
+  style:
+    | 'lightning_cleave'
+    | 'area_slag_slam'
+    | 'death_ray'
+    | 'triple_homing_salvo'
+    | 'lyric_rune_chime'
+    | 'heavy_hammer_slam'
+    | 'vibro_blade_slash'
+    | 'plasma_sword_cleave'
+    | 'rail_rifle_shot'
+    | 'scatter_shot_blast';
+  damage: number;
+  radius?: number;
+  siphonPercent?: number;
+  targetX?: number;
+  targetY?: number;
+  damageType?: DamageType;
+  isCloseQuarters?: boolean;
+  shieldDamageBonus?: number;
+  areaRadius?: number;
+  sourceWeaponName?: string;
+}
+
 export interface FatalDamageInfo {
   killerName: string;
   damageType: DamageType | string;
@@ -59,7 +101,8 @@ export class Player {
   public xp: number = 0;
   public stats: PlayerStats;
 
-  // Inventory & Equipment
+  // Inventory & Equipment & Cumulative Arsenal
+  public baseWeapon!: Item;
   public inventory: Item[] = [];
   public equipment: Partial<Record<ItemSlot, Item>> = {};
   public naniteScrap: number = 150;
@@ -147,7 +190,8 @@ export class Player {
     appearance?: Partial<CharacterAppearance>,
     stats?: Partial<PlayerStats>,
     inventory?: Item[],
-    equipment?: Partial<Record<ItemSlot, Item>>
+    equipment?: Partial<Record<ItemSlot, Item>>,
+    baseWeapon?: Item
   ) {
     this.id = id;
     this.name = name;
@@ -172,13 +216,84 @@ export class Player {
 
     this.inventory = inventory || [];
     this.equipment = equipment || {};
-    if (!this.equipment.mainHand) {
-      this.equipment.mainHand = getStarterWeaponForArchetype(this.appearance.archetype);
+
+    const expectedStarterWeapon = getStarterWeaponForArchetype(this.appearance.archetype);
+    if (!baseWeapon || !isBaseWeaponMatchingArchetype(baseWeapon, this.appearance.archetype)) {
+      const prevUpgrade = baseWeapon?.upgradeLevel || 0;
+      this.baseWeapon = { ...expectedStarterWeapon };
+      if (prevUpgrade > 0) {
+        this.baseWeapon.upgradeLevel = prevUpgrade;
+      }
+    } else {
+      this.baseWeapon = baseWeapon;
+    }
+
+    // Weapon slots (equipment.mainHand, etc.) are for MIX & MATCH progressive weapons.
+    // Clean up any legacy starter weapon or base weapon duplicate from mainHand.
+    if (this.equipment.mainHand) {
+      const m = this.equipment.mainHand;
+      if (m.id === 'starter_blade' || m.id?.startsWith('starter_') || m.id === this.baseWeapon.id || m.name === this.baseWeapon.name) {
+        delete this.equipment.mainHand;
+      }
     }
 
     this.recalculateDerivedStats();
     this.health = this.maxHealth;
     this.shield = this.maxShield;
+  }
+
+  // Switch archetype blueprint cleanly with matching signature base weapon & base stats
+  public setArchetype(newArchetype: 'soturi' | 'runoseppä' | 'tietäjä' | 'korvenraivaaja'): void {
+    this.appearance.archetype = newArchetype;
+    const defaultStats = getDefaultStatsForArchetype(newArchetype);
+    this.stats = {
+      sisu: defaultStats.sisu,
+      nokkela: defaultStats.nokkela,
+      vaki: defaultStats.vaki,
+      tieto: defaultStats.tieto,
+      statPoints: this.stats.statPoints || 0
+    };
+    this.baseWeapon = getStarterWeaponForArchetype(newArchetype);
+    if (this.equipment.mainHand) {
+      const m = this.equipment.mainHand;
+      if (m.id === 'starter_blade' || m.id?.startsWith('starter_') || m.name === this.baseWeapon.name || m.id === this.baseWeapon.id) {
+        delete this.equipment.mainHand;
+      }
+    }
+    this.recalculateDerivedStats();
+    this.health = this.maxHealth;
+    this.shield = this.maxShield;
+  }
+
+  // Arsenal Slot Unlock and Multi-Weapon Progression Queries
+  public isWeaponSlotUnlocked(slot: ItemSlot, sectorClearsCount: number = 0): boolean {
+    const conf = WEAPON_SLOT_UNLOCK_CONFIGS.find(u => u.slot === slot);
+    if (!conf) return true; // Non-weapon gear slots are always unlocked
+    return this.level >= conf.reqLevel || sectorClearsCount >= conf.reqClears;
+  }
+
+  public getMaxWeaponSlots(sectorClearsCount: number = 0): number {
+    return WEAPON_SLOT_UNLOCK_CONFIGS.filter(u => this.level >= u.reqLevel || sectorClearsCount >= u.reqClears).length;
+  }
+
+  public getAllEquippedWeapons(): Item[] {
+    const list: Item[] = [];
+    for (const slot of CUMULATIVE_WEAPON_SLOTS) {
+      const item = this.equipment[slot];
+      if (item && item.type === 'weapon') {
+        list.push(item);
+      }
+    }
+    return list;
+  }
+
+  public getActiveWeapons(): Item[] {
+    const list: Item[] = [];
+    if (this.baseWeapon) {
+      list.push(this.baseWeapon);
+    }
+    list.push(...this.getAllEquippedWeapons());
+    return list;
   }
 
   // Recalculate max health, shields, armor, speed based on stats & gear
@@ -208,6 +323,15 @@ export class Player {
     }
     this.baseSpeed = baseSpeed;
     let spd = this.baseSpeed + this.stats.nokkela * 0.06;
+
+    // Apply base weapon bonuses
+    if (this.baseWeapon) {
+      if (this.baseWeapon.armor) armor += this.baseWeapon.armor;
+      if (this.baseWeapon.healthMax) hp += this.baseWeapon.healthMax;
+      if (this.baseWeapon.shieldMax) shield += this.baseWeapon.shieldMax;
+      if (this.baseWeapon.energyMax) energy += this.baseWeapon.energyMax;
+      if (this.baseWeapon.moveSpeed) spd += this.baseWeapon.moveSpeed * 0.05;
+    }
 
     // Apply equipment bonuses
     Object.values(this.equipment).forEach(item => {
@@ -538,50 +662,27 @@ export class Player {
     return true;
   }
 
-  // Primary Attack (Modular Weapon Classification System & Archetype Upgrade Scaling)
-  attack(targetX: number, targetY: number): {
-    performed: boolean;
-    style:
-      | 'lightning_cleave'
-      | 'area_slag_slam'
-      | 'death_ray'
-      | 'triple_homing_salvo'
-      | 'lyric_rune_chime'
-      | 'heavy_hammer_slam'
-      | 'vibro_blade_slash'
-      | 'plasma_sword_cleave'
-      | 'rail_rifle_shot'
-      | 'scatter_shot_blast';
-    damage: number;
-    radius?: number;
-    siphonPercent?: number;
-    targetX?: number;
-    targetY?: number;
-    damageType?: DamageType;
-    isCloseQuarters?: boolean;
-    shieldDamageBonus?: number;
-    areaRadius?: number;
-  } | null {
-    if (this.attackCooldown > 0 || this.isDodging || this.isDead) return null;
-
-    const speedMult = this.overclockTimer > 0 ? 1.8 : 1.0;
+  // Fire a single weapon in the player's arsenal (spawns projectiles, triggers visual states)
+  private fireSingleWeapon(
+    weapon: Item,
+    targetX: number,
+    targetY: number,
+    speedMult: number,
+    isBaseWeapon: boolean = false
+  ): AttackResult {
     const arch = this.appearance.archetype;
-    const weapon = this.equipment.mainHand;
-    const weaponCat: WeaponCategory = weapon
-      ? getWeaponCategory(weapon)
-      : (arch === 'korvenraivaaja' ? 'rail_rifle' : (arch === 'tietäjä' ? 'runic_harp' : (arch === 'runoseppä' ? 'runic_harp' : 'heavy_hammer')));
-
-    const damageType: DamageType = weapon?.damageType || (arch === 'soturi' ? 'fire' : (arch === 'tietäjä' ? 'fire' : (arch === 'runoseppä' ? 'plasma' : 'plasma')));
-    const weaponBaseDmg = weapon?.damage || (22 + this.level * 3.5);
+    const weaponCat: WeaponCategory = getWeaponCategory(weapon);
+    const damageType: DamageType = weapon.damageType || (arch === 'soturi' ? 'fire' : 'plasma');
+    const weaponBaseDmg = weapon.damage || (22 + this.level * 3.5);
     const baseAngle = Math.atan2(targetY - this.y, targetX - this.x);
 
     // Dynamic Weapon Upgrade Metrics (Bullets, Spread, Range, Shield Shred & AoE)
-    const upgradeLvl = weapon?.upgradeLevel || 0;
-    const bonusBullets = weapon?.bonusProjectiles || Math.floor(upgradeLvl / 2);
-    const spreadBonus = weapon?.spreadAngleBonus || (upgradeLvl * 0.07);
-    const rangeMult = weapon?.rangeMultiplier || (1.0 + upgradeLvl * 0.12);
-    const shieldDmgBonus = weapon?.shieldDamageBonus || (upgradeLvl * 0.35);
-    const areaRadius = weapon?.areaRadiusBonus || (upgradeLvl > 0 ? 0.8 + upgradeLvl * 0.35 : 0);
+    const upgradeLvl = weapon.upgradeLevel || 0;
+    const bonusBullets = weapon.bonusProjectiles || Math.floor(upgradeLvl / 2);
+    const spreadBonus = weapon.spreadAngleBonus || (upgradeLvl * 0.07);
+    const rangeMult = weapon.rangeMultiplier || (1.0 + upgradeLvl * 0.12);
+    const shieldDmgBonus = weapon.shieldDamageBonus || (upgradeLvl * 0.35);
+    const areaRadius = weapon.areaRadiusBonus || (upgradeLvl > 0 ? 0.8 + upgradeLvl * 0.35 : 0);
 
     const elemColors: Record<DamageType, string> = {
       shock: '#facc15',
@@ -593,11 +694,10 @@ export class Player {
     };
     const mainColor = elemColors[damageType] || '#38bdf8';
 
-    // 1. HEAVY HAMMERS & SLAG SLEDGES: Full 360° Seismic Ground Quake (Soturi Signature)
+    // 1. HEAVY HAMMERS & SLAG SLEDGES: Full 360° Seismic Ground Quake
     if (weaponCat === 'heavy_hammer') {
       this.hammerSlamDuration = 0.28 / speedMult;
       this.hammerSlamTimer = this.hammerSlamDuration;
-      this.attackCooldown = 0.50 / speedMult;
       soundEngine.playMeleeSwing();
       soundEngine.playHitImpact(true);
 
@@ -626,7 +726,8 @@ export class Player {
         damageType,
         isCloseQuarters: true,
         shieldDamageBonus: shieldDmgBonus,
-        areaRadius: totalRadius
+        areaRadius: totalRadius,
+        sourceWeaponName: weapon.name
       };
     }
 
@@ -634,7 +735,6 @@ export class Player {
     if (weaponCat === 'vibro_blade') {
       this.meleeSwingDuration = 0.13 / speedMult;
       this.meleeSwingTimer = this.meleeSwingDuration;
-      this.attackCooldown = 0.16 / speedMult; // Ultra-fast cadence
       soundEngine.playMeleeSwing();
 
       const bladeDmg = Math.floor(weaponBaseDmg * 0.85 + this.stats.nokkela * 1.3 + this.level * 2);
@@ -677,7 +777,8 @@ export class Player {
         damageType,
         isCloseQuarters: true,
         shieldDamageBonus: shieldDmgBonus,
-        areaRadius
+        areaRadius,
+        sourceWeaponName: weapon.name
       };
     }
 
@@ -685,7 +786,6 @@ export class Player {
     if (weaponCat === 'plasma_sword') {
       this.meleeSwingDuration = 0.22 / speedMult;
       this.meleeSwingTimer = this.meleeSwingDuration;
-      this.attackCooldown = 0.28 / speedMult;
       soundEngine.playLightningCleave();
 
       const swordDmg = Math.floor(weaponBaseDmg * 1.15 + this.stats.sisu * 1.2 + this.stats.nokkela * 0.8 + this.level * 3.5);
@@ -729,13 +829,13 @@ export class Player {
         damageType,
         isCloseQuarters: true,
         shieldDamageBonus: shieldDmgBonus,
-        areaRadius
+        areaRadius,
+        sourceWeaponName: weapon.name
       };
     }
 
-    // 4. RAIL-RIFLES: Precision Hyper-Velocity Linear Slugs (Korvenraivaaja Signature)
+    // 4. RAIL-RIFLES: Precision Hyper-Velocity Linear Slugs (Piercing Sniper)
     if (weaponCat === 'rail_rifle') {
-      this.attackCooldown = 0.34 / speedMult;
       soundEngine.playRailgunShot();
 
       const railDmg = Math.floor(weaponBaseDmg * 1.25 + this.stats.nokkela * 1.4 + this.level * 4);
@@ -777,13 +877,13 @@ export class Player {
         damage: railDmg,
         damageType,
         shieldDamageBonus: shieldDmgBonus,
-        areaRadius
+        areaRadius,
+        sourceWeaponName: weapon.name
       };
     }
 
     // 5. SCATTER-CANNONS & VOID MORTARS: Wide Multi-Pellet Shotgun Blast
     if (weaponCat === 'scatter_shot') {
-      this.attackCooldown = 0.44 / speedMult;
       soundEngine.playTripleShot();
 
       const pelletDmg = Math.floor(weaponBaseDmg * 0.42 + this.stats.nokkela * 0.5 + this.level * 1.2);
@@ -829,18 +929,19 @@ export class Player {
         damageType,
         isCloseQuarters: true,
         shieldDamageBonus: shieldDmgBonus,
-        areaRadius
+        areaRadius,
+        sourceWeaponName: weapon.name
       };
     }
 
-    // 6. RUNIC STAVES, LYRIC HARPS & CASTING:
-    // If Tietäjä using Void or Unarmed: Death Ray Channel!
-    if (arch === 'tietäjä' && (damageType === 'void' || !weapon)) {
+    // 6. RUNIC STAVES, VOID SPIRES & LYRIC HARPS:
+    // Void Spire or Void Element: Continuous Tuoni Death-Ray Beam & Life Siphon
+    const isVoidDeathRay = damageType === 'void' || weapon.name.toLowerCase().includes('void') || weapon.name.toLowerCase().includes('death');
+    if (isVoidDeathRay) {
       this.deathRayDuration = 0.24 / speedMult;
       this.deathRayTimer = this.deathRayDuration;
       this.deathRayActive = true;
       this.deathRayTarget = { x: targetX, y: targetY };
-      this.attackCooldown = 0.22 / speedMult;
       soundEngine.playDeathRayBeam();
 
       return {
@@ -852,12 +953,12 @@ export class Player {
         targetY,
         damageType: 'void',
         shieldDamageBonus: shieldDmgBonus,
-        areaRadius
+        areaRadius,
+        sourceWeaponName: weapon.name
       };
     }
 
-    // Default Runic Harp (Runoseppä Virsikannel) / Magma Staff (Tietäjä): Singing Lyric Rune Shards or Searing Orbs
-    this.attackCooldown = 0.26 / speedMult;
+    // Default Runic Harp (Runoseppä Virsikannel / Staves): Singing Lyric Rune Shards
     soundEngine.playRunicLyricChime();
 
     const runeDmg = Math.floor(weaponBaseDmg * 1.05 + this.stats.vaki * 1.5 + this.level * 3);
@@ -899,8 +1000,48 @@ export class Player {
       damage: runeDmg,
       damageType,
       shieldDamageBonus: shieldDmgBonus,
-      areaRadius
+      areaRadius,
+      sourceWeaponName: weapon.name
     };
+  }
+
+  // Primary Cumulative Arsenal Attack: Fires Base Weapon + All Active Weapon Slots Simultaneously!
+  attack(targetX: number, targetY: number): AttackResult[] | null {
+    if (this.attackCooldown > 0 || this.isDodging || this.isDead) return null;
+
+    const speedMult = this.overclockTimer > 0 ? 1.8 : 1.0;
+    const activeWeapons = this.getActiveWeapons();
+    if (activeWeapons.length === 0) {
+      if (!this.baseWeapon) {
+        this.baseWeapon = getStarterWeaponForArchetype(this.appearance.archetype);
+      }
+      activeWeapons.push(this.baseWeapon);
+    }
+
+    const results: AttackResult[] = [];
+    let totalCooldown = 0;
+
+    for (let i = 0; i < activeWeapons.length; i++) {
+      const wpn = activeWeapons[i];
+      const cat = getWeaponCategory(wpn);
+      const wpnCd = cat === 'heavy_hammer' ? 0.48 :
+                    cat === 'scatter_shot' ? 0.42 :
+                    cat === 'rail_rifle' ? 0.34 :
+                    cat === 'plasma_sword' ? 0.28 :
+                    cat === 'vibro_blade' ? 0.18 : 0.26;
+      totalCooldown += wpnCd;
+
+      const res = this.fireSingleWeapon(wpn, targetX, targetY, speedMult, i === 0);
+      if (res && res.performed) {
+        results.push(res);
+      }
+    }
+
+    // Cooldown is balanced as the average cadence across active weapons
+    const avgCd = totalCooldown / activeWeapons.length;
+    this.attackCooldown = Math.max(0.20, Math.min(0.50, avgCd)) / speedMult;
+
+    return results.length > 0 ? results : null;
   }
 
   // Begin Charging Archetype Special Attack (Hold Mouse LMB/RMB)
@@ -934,8 +1075,9 @@ export class Player {
     this.specialChargeTime = 0;
     this.attackCooldown = 0.35;
 
-    const weapon = this.equipment.mainHand;
-    const baseDmg = weapon?.damage || (22 + this.level * 4);
+    const baseWeaponDmg = this.baseWeapon?.damage || 22;
+    const extraArsenalDmg = this.getAllEquippedWeapons().reduce((sum, w) => sum + (w.damage || 0) * 0.4, 0);
+    const baseDmg = baseWeaponDmg + extraArsenalDmg + this.level * 4;
     const archetype = this.appearance.archetype;
 
     soundEngine.playSpecialRelease();

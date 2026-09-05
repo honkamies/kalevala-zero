@@ -69,6 +69,7 @@ export class PlatformerRenderer {
     const h = this.canvas.height;
     const ctx = this.ctx;
     const cam = this.camera;
+    cam.handleResize(w, h);
 
     // 1. Clear Main & Light Canvases
     ctx.fillStyle = '#06040a';
@@ -136,13 +137,14 @@ export class PlatformerRenderer {
       const par1 = this.camera.getParallaxOffset(0.08);
       const imgW = w * 1.35;
       const imgH = h * 1.2;
-      const posX = (par1.offsetX % imgW) - (imgW * 0.15);
+      const modX = (((par1.offsetX % imgW) + imgW) % imgW) - imgW;
       const posY = par1.offsetY - (imgH * 0.1);
 
       ctx.save();
       ctx.globalAlpha = 0.58;
-      ctx.drawImage(this.bgSkyImage, posX, posY, imgW, imgH);
-      ctx.drawImage(this.bgSkyImage, posX + imgW, posY, imgW, imgH);
+      ctx.drawImage(this.bgSkyImage, modX, posY, imgW, imgH);
+      ctx.drawImage(this.bgSkyImage, modX + imgW, posY, imgW, imgH);
+      ctx.drawImage(this.bgSkyImage, modX + imgW * 2, posY, imgW, imgH);
       ctx.restore();
     }
 
@@ -151,13 +153,14 @@ export class PlatformerRenderer {
       const par2 = this.camera.getParallaxOffset(0.22);
       const imgW = w * 1.25;
       const imgH = h * 0.9;
-      const posX = (par2.offsetX % imgW) - (imgW * 0.1);
+      const modX = (((par2.offsetX % imgW) + imgW) % imgW) - imgW;
       const posY = h - imgH + par2.offsetY * 0.5;
 
       ctx.save();
       ctx.globalAlpha = 0.45;
-      ctx.drawImage(this.bgMidImage, posX, posY, imgW, imgH);
-      ctx.drawImage(this.bgMidImage, posX + imgW, posY, imgW, imgH);
+      ctx.drawImage(this.bgMidImage, modX, posY, imgW, imgH);
+      ctx.drawImage(this.bgMidImage, modX + imgW, posY, imgW, imgH);
+      ctx.drawImage(this.bgMidImage, modX + imgW * 2, posY, imgW, imgH);
       ctx.restore();
     }
 
@@ -341,15 +344,21 @@ export class PlatformerRenderer {
       ctx.fillRect(0, 0, screenX, h);
     }
 
-    // 2. Towering Spacetime Fracture Wall Line
-    ctx.strokeStyle = '#f87171';
-    ctx.shadowColor = '#dc2626';
-    ctx.shadowBlur = 18;
-    ctx.lineWidth = 4 * cam.zoom;
+    // 2. Towering Spacetime Fracture Wall Line (dual stroke for glow without shadowBlur overhead)
+    ctx.strokeStyle = 'rgba(220, 38, 38, 0.45)';
+    ctx.lineWidth = 10 * cam.zoom;
     ctx.beginPath();
     ctx.moveTo(screenX, 0);
     ctx.lineTo(screenX, h);
     ctx.stroke();
+
+    ctx.strokeStyle = '#f87171';
+    ctx.lineWidth = 3.5 * cam.zoom;
+    ctx.beginPath();
+    ctx.moveTo(screenX, 0);
+    ctx.lineTo(screenX, h);
+    ctx.stroke();
+    ctx.shadowBlur = 0;
 
     // Secondary jagged lightning crack along the wall
     ctx.strokeStyle = '#fef08a';
@@ -535,12 +544,16 @@ export class PlatformerRenderer {
         const isShielded = remainingOrgans > 0;
 
         if (isShielded) {
-          // Impenetrable Eldritch Bone Barrier & Forcefield
+          // Impenetrable Eldritch Bone Barrier & Forcefield (dual stroke for glow)
           const barrierRad = (26 + Math.sin(boss.pulseTimer * 3.0) * 3) * cam.zoom;
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+          ctx.lineWidth = 6.0 * cam.zoom;
+          ctx.beginPath();
+          ctx.arc(0, 0, barrierRad, 0, Math.PI * 2);
+          ctx.stroke();
+
           ctx.strokeStyle = '#38bdf8';
-          ctx.lineWidth = 2.5 * cam.zoom;
-          ctx.shadowColor = '#38bdf8';
-          ctx.shadowBlur = 12;
+          ctx.lineWidth = 2.0 * cam.zoom;
           ctx.beginPath();
           ctx.arc(0, 0, barrierRad, 0, Math.PI * 2);
           ctx.stroke();
@@ -561,12 +574,17 @@ export class PlatformerRenderer {
           ctx.textAlign = 'center';
           ctx.fillText(`🔒 SHIELDED [${remainingOrgans} Organs Left]`, 0, -rSize - 12 * cam.zoom);
         } else {
-          // Vulnerable Heart Core
+          // Vulnerable Heart Core (dual stroke for glow)
           const pulseCore = (22 + Math.sin(boss.pulseTimer * 5.0) * 5) * cam.zoom;
+          const outerGlowColor = boss.heartOpen ? 'rgba(250, 204, 21, 0.45)' : 'rgba(239, 68, 68, 0.45)';
+          ctx.strokeStyle = outerGlowColor;
+          ctx.lineWidth = 7.0 * cam.zoom;
+          ctx.beginPath();
+          ctx.arc(0, 0, pulseCore, 0, Math.PI * 2);
+          ctx.stroke();
+
           ctx.strokeStyle = boss.heartOpen ? '#facc15' : '#ef4444';
-          ctx.lineWidth = 3.0 * cam.zoom;
-          ctx.shadowColor = '#facc15';
-          ctx.shadowBlur = 18;
+          ctx.lineWidth = 2.5 * cam.zoom;
           ctx.beginPath();
           ctx.arc(0, 0, pulseCore, 0, Math.PI * 2);
           ctx.stroke();
@@ -901,11 +919,13 @@ export class PlatformerRenderer {
       ctx.arc(pos.x, pos.y, shieldRad, 0, Math.PI * 2);
       ctx.fill();
 
-      // Pulsing barrier perimeter ring
+      // Pulsing barrier perimeter ring (dual stroke for glow)
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+      ctx.lineWidth = (6.0 + Math.sin(sTime * 4.0) * 1.5) * cam.zoom;
+      ctx.stroke();
+
       ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = (2.5 + Math.sin(sTime * 4.0) * 1.0) * cam.zoom;
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 18;
+      ctx.lineWidth = 2.0 * cam.zoom;
       ctx.stroke();
 
       // 6 Rotating Hexagonal Energy Lattice Nodes
@@ -916,17 +936,16 @@ export class PlatformerRenderer {
         ctx.beginPath();
         ctx.arc(nx, ny, 3.5 * cam.zoom, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 10;
         ctx.fill();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1.5 * cam.zoom;
+        ctx.stroke();
       }
 
       // Remaining shield duration badge
       ctx.font = `bold ${10 * cam.zoom}px monospace`;
       ctx.fillStyle = '#38bdf8';
       ctx.textAlign = 'center';
-      ctx.shadowColor = '#000000';
-      ctx.shadowBlur = 4;
       ctx.fillText(`🛡️ BARRIER: ${player.energyShieldTimer.toFixed(1)}s`, pos.x, pos.y - shieldRad * 0.95);
 
       ctx.restore();
@@ -1070,10 +1089,8 @@ export class PlatformerRenderer {
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, Math.max(1, rad), 0, Math.PI * 2);
       ctx.strokeStyle = sw.color;
-      ctx.lineWidth = Math.max(1.5, 4.0 * sw.alpha * cam.zoom);
-      ctx.globalAlpha = Math.max(0, sw.alpha);
-      ctx.shadowColor = sw.color;
-      ctx.shadowBlur = 12;
+      ctx.lineWidth = Math.max(2.0, 5.0 * sw.alpha * cam.zoom);
+      ctx.globalAlpha = Math.max(0, sw.alpha * 0.85);
       ctx.stroke();
       ctx.restore();
       this.addPointLight(pos.x, pos.y, rad * 1.5, sw.color);
@@ -1173,11 +1190,10 @@ export class PlatformerRenderer {
       this.addPointLight(pos.x, pos.y, 35, 'rgba(220, 38, 38, 0.4)');
     });
 
-    // 3. Particles & Blood Droplets & Blood Mists
+    // 3. Particles & Blood Droplets & Blood Mists (Zero ctx.save/restore overhead)
     particles.particles.forEach(pt => {
       const pos = cam.worldToScreen(pt.x, pt.y);
       const sz = pt.size * cam.zoom;
-      ctx.save();
       ctx.globalAlpha = Math.max(0, pt.life / pt.maxLife);
 
       if (pt.size >= 12.0) {
@@ -1208,8 +1224,8 @@ export class PlatformerRenderer {
         ctx.fillStyle = pt.color;
         ctx.fillRect(pos.x - sz * 0.5, pos.y - sz * 0.5, sz, sz);
       }
-      ctx.restore();
     });
+    ctx.globalAlpha = 1.0;
 
     // 4. Floating Combat Text
     combat.floatingTexts.forEach(ft => {

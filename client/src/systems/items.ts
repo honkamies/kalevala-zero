@@ -1,7 +1,7 @@
 // Procedural Itemization, Affixes, Sockets & Runic Shards (*Riimukivet*)
 
 export type ItemRarity = 'common' | 'augmented' | 'runic' | 'masterwork' | 'relic';
-export type ItemSlot = 'mainHand' | 'offHand' | 'head' | 'chest' | 'legs' | 'relic';
+export type ItemSlot = 'mainHand' | 'weapon2' | 'weapon3' | 'weapon4' | 'weapon5' | 'offHand' | 'head' | 'chest' | 'legs' | 'relic';
 export type DamageType = 'physical' | 'plasma' | 'frost' | 'shock' | 'void' | 'fire';
 export type WeaponCategory = 'heavy_hammer' | 'vibro_blade' | 'plasma_sword' | 'rail_rifle' | 'scatter_shot' | 'runic_harp';
 
@@ -97,6 +97,7 @@ export class ItemGenerator {
     { baseName: 'Runic Arc Scepter', slot: 'mainHand' as ItemSlot, baseDmg: 17, type: 'shock' as DamageType, icon: 'arc_scepter', weaponCategory: 'runic_harp' as WeaponCategory },
     { baseName: 'Virsikannel Lyric Harp', slot: 'mainHand' as ItemSlot, baseDmg: 19, type: 'plasma' as DamageType, icon: 'kantele_resonator', weaponCategory: 'runic_harp' as WeaponCategory },
     { baseName: 'Alinen Magma Staff', slot: 'mainHand' as ItemSlot, baseDmg: 22, type: 'fire' as DamageType, icon: 'magma_staff', weaponCategory: 'runic_harp' as WeaponCategory },
+    { baseName: 'Tuonela Void-Spire', slot: 'mainHand' as ItemSlot, baseDmg: 26, type: 'void' as DamageType, icon: 'star_spire', weaponCategory: 'runic_harp' as WeaponCategory },
     { baseName: 'Celestial Star-Spire', slot: 'mainHand' as ItemSlot, baseDmg: 24, type: 'void' as DamageType, icon: 'star_spire', weaponCategory: 'runic_harp' as WeaponCategory },
 
     // Axes & Halberds
@@ -451,70 +452,98 @@ export function getStarterWeaponForArchetype(archetype: string): Item {
         weaponCategory: 'rail_rifle',
         rarity: 'common',
         level: 1,
-        damage: 24,
+        damage: 25,
         damageType: 'plasma',
-        critChance: 14,
+        critChance: 16,
         upgradeLevel: 0,
         bonusProjectiles: 0,
         spreadAngleBonus: 0,
-        rangeMultiplier: 1.20, // Naturally extreme range & velocity
-        shieldDamageBonus: 0.20,
+        rangeMultiplier: 1.25, // Naturally extreme range & velocity
+        shieldDamageBonus: 0.25,
         areaRadiusBonus: 0.3,
-        affixes: ['+14% Critical Kinetic Velocity', '+20% Extended Range & Piercing'],
+        affixes: ['+16% Critical Kinetic Velocity', '+25% Extended Range & Piercing'],
         sockets: [{ type: 'empty', filled: false }],
         icon: 'rail_rifle',
         naniteValue: 40,
-        description: 'Precision magnetic rail rifle capable of extreme-range sniping, high-velocity armor penetration, and rapid criticals.'
+        description: 'Precision magnetic rail rifle capable of extreme-range linear armor piercing slugs with elevated critical strike velocity.'
       };
     case 'tietäjä':
       return {
-        id: 'starter_tietaja_staff',
-        name: 'Alinen Magma Staff',
+        id: 'starter_tietaja_spire',
+        name: 'Tuonela Void-Spire',
         slot: 'mainHand',
         type: 'weapon',
         weaponCategory: 'runic_harp',
         rarity: 'common',
         level: 1,
-        damage: 23,
-        damageType: 'fire',
+        damage: 26,
+        damageType: 'void',
         critChance: 10,
         upgradeLevel: 0,
         bonusProjectiles: 0,
         spreadAngleBonus: 0,
-        rangeMultiplier: 1.05,
-        shieldDamageBonus: 0.30,
+        rangeMultiplier: 1.12,
+        shieldDamageBonus: 0.35,
         areaRadiusBonus: 1.0,
-        affixes: ['+25 Void Siphon on Hit', '+30% Barrier Shredding & Area Burn'],
+        affixes: ['+25 Void Siphon on Hit', '+35% Barrier Shredding & Death Ray Channel'],
         sockets: [{ type: 'empty', filled: false }],
-        icon: 'magma_staff',
+        icon: 'star_spire',
         naniteValue: 40,
-        description: 'Resonant runic focus that channels searing magma pulses, exploding into energy rings and siphoning life frequencies.'
+        description: 'A shadowy void spire channeled from the rivers of Tuonela. Projects a continuous death-ray beam that siphons vitality and shields from foes.'
       };
     case 'runoseppä':
     default:
       return {
-        id: 'starter_runo_slicer',
+        id: 'starter_runo_resonator',
         name: 'Virsikannel Lyric Resonator',
         slot: 'mainHand',
         type: 'weapon',
         weaponCategory: 'runic_harp',
         rarity: 'common',
         level: 1,
-        damage: 21,
-        damageType: 'plasma',
-        critChance: 9,
+        damage: 23,
+        damageType: 'shock',
+        critChance: 10,
         upgradeLevel: 0,
         bonusProjectiles: 0,
-        spreadAngleBonus: 0.14,
-        rangeMultiplier: 1.08,
+        spreadAngleBonus: 0.16,
+        rangeMultiplier: 1.10,
         shieldDamageBonus: 0.35,
         areaRadiusBonus: 0.8,
-        affixes: ['+30 Nanite Shield Matrix', 'Harmonic Acoustic Resonance (Area Shred)'],
+        affixes: ['+30 Nanite Shield Matrix', 'Harmonic Acoustic Shock Resonance'],
         sockets: [{ type: 'empty', filled: false }],
         icon: 'kantele_resonator',
         naniteValue: 40,
-        description: 'Poetry-forged acoustic kantele that projects singing harmonic lyric rune chords, rippling through enemy defenses.'
+        description: 'Poetry-forged acoustic kantele that projects singing harmonic lyric rune chords, rippling through enemy defenses with chaining shock pulses.'
       };
+  }
+}
+
+export function isBaseWeaponMatchingArchetype(weapon: Item | undefined | null, archetype: string): boolean {
+  if (!weapon || !weapon.id) return false;
+  if (weapon.id === 'starter_blade') return false;
+
+  switch (archetype) {
+    case 'soturi':
+      return weapon.id === 'starter_soturi_hammer' ||
+             weapon.weaponCategory === 'heavy_hammer' ||
+             weapon.name === 'Slag War-Hammer';
+    case 'korvenraivaaja':
+      return weapon.id === 'starter_korpi_rifle' ||
+             weapon.weaponCategory === 'rail_rifle' ||
+             weapon.name === 'Scrap Rail-Rifle';
+    case 'tietäjä':
+      return weapon.id === 'starter_tietaja_spire' ||
+             weapon.id === 'starter_tietaja_staff' ||
+             weapon.name === 'Tuonela Void-Spire' ||
+             (weapon.damageType === 'void' && weapon.weaponCategory === 'runic_harp');
+    case 'runoseppä':
+      return weapon.id === 'starter_runo_resonator' ||
+             weapon.id === 'starter_runo_slicer' ||
+             weapon.name === 'Virsikannel Lyric Resonator' ||
+             (weapon.damageType === 'shock' && weapon.weaponCategory === 'runic_harp');
+    default:
+      return false;
   }
 }
 

@@ -57,7 +57,7 @@ export class PlatformerMode {
     this.hud = hud;
     this.onExitCallback = onExit;
 
-    this.camera = new PlatformerCamera();
+    this.camera = new PlatformerCamera(canvas);
     this.renderer = new PlatformerRenderer(canvas, lightCanvas, this.camera);
   }
 
@@ -78,6 +78,11 @@ export class PlatformerMode {
     projectileManager.clear();
     particleSystem.clear();
     combatEngine.clear();
+
+    // Ensure camera viewport dimensions match the active canvas
+    this.camera.handleResize(this.canvas.width, this.canvas.height);
+    this.camera.zoom = 0.75;
+    this.camera.targetZoom = 0.75;
 
     // 1. Generate Platformer Level
     const seed = Math.floor(Math.random() * 100000);
@@ -167,6 +172,8 @@ export class PlatformerMode {
     this.playerCtrl.vx = 0;
     this.playerCtrl.vy = 0;
     this.playerCtrl.hurtTimer = 1.0;
+    this.camera.zoom = 0.75;
+    this.camera.targetZoom = 0.75;
     this.camera.snapTo(this.playerCtrl.x, this.playerCtrl.y);
     soundEngine.playPlatformerWorldEnter();
     particleSystem.emitBeacon(this.playerCtrl.x, this.playerCtrl.y, '#38bdf8');
@@ -176,6 +183,8 @@ export class PlatformerMode {
 
   update(dt: number) {
     if (!this.isActive || !this.level || !this.playerCtrl) return;
+
+    this.camera.handleResize(this.canvas.width, this.canvas.height);
 
     if (this.shootCooldownTimer > 0) this.shootCooldownTimer -= dt;
     if (this.meleeCooldownTimer > 0) this.meleeCooldownTimer -= dt;
@@ -453,7 +462,6 @@ export class PlatformerMode {
         );
 
         const died = e.takeDamage(res.finalDamage, res.damageType);
-        combatEngine.addFloatingText(e.x, e.y - 0.5, `${res.finalDamage}`, res.isCrit ? 'crit' : 'physical');
         this.camera.addShake(0.7, 0.06);
         particleSystem.emitDamageExplosion(e.x, e.y, '#38bdf8', res.isCrit);
 
@@ -468,7 +476,6 @@ export class PlatformerMode {
       const hitRes = this.colossalBoss.hitTest(attackX, attackY, 0.8, 85, 'physical');
       if (hitRes.hit) {
         hitAny = true;
-        combatEngine.addFloatingText(attackX, attackY - 0.5, '85', hitRes.isCrit ? 'crit' : 'physical');
         this.camera.addShake(0.8, 0.06);
         particleSystem.emitDamageExplosion(attackX, attackY, '#38bdf8', hitRes.isCrit);
       }
@@ -494,7 +501,6 @@ export class PlatformerMode {
       const dy = e.y - this.playerCtrl!.y;
       if (Math.sqrt(dx * dx + dy * dy) < 5.0) {
         e.takeDamage(150, 'shock');
-        combatEngine.addFloatingText(e.x, e.y - 0.5, '150', 'shock');
       }
     });
 
@@ -618,7 +624,6 @@ export class PlatformerMode {
               { armor: 4, shield: 0 }
             );
             const died = e.takeDamage(res.finalDamage, res.damageType);
-            combatEngine.addFloatingText(e.x, e.y - 0.5, `${res.finalDamage}`, res.isCrit ? 'crit' : 'plasma');
             particleSystem.emitDamageExplosion(p.x, p.y, p.color, res.isCrit);
             this.camera.addShake(res.isCrit ? 0.7 : 0.4, 0.06);
 
@@ -633,8 +638,6 @@ export class PlatformerMode {
           const hitRes = this.colossalBoss.hitTest(p.x, p.y, p.radius, p.damage, p.damageType);
           if (hitRes.hit) {
             p.life = 0;
-            const dmgText = `${hitRes.isCrit ? Math.round(p.damage * 2.2) : p.damage}`;
-            combatEngine.addFloatingText(p.x, p.y - 0.3, dmgText, hitRes.isCrit ? 'crit' : 'plasma');
             particleSystem.emitDamageExplosion(p.x, p.y, p.color, hitRes.isCrit);
             this.camera.addShake(hitRes.isCrit ? 0.8 : 0.45, 0.06);
           }
@@ -667,7 +670,6 @@ export class PlatformerMode {
   private onEnemyKilled(e: PlatformerEnemy) {
     particleSystem.emitEnemyDeathExplosion(e.x, e.y, e.color, e.isBoss, e.isElite);
     this.camera.addShake(e.isBoss ? 2.0 : (e.isElite ? 0.9 : 0.5), 0.08);
-    combatEngine.addFloatingText(e.x, e.y - 0.8, e.isBoss ? '💥 BOSS DECIMATED!' : (e.isElite ? '🩸 ELITE GORE EXPLOSION!' : '🩸 GORE BURST!'), 'crit');
     this.playerCtrl!.player.gainXP(e.type === 'broodmother' ? 140 : 65);
     this.playerCtrl!.player.naniteScrap += e.type === 'broodmother' ? 50 : 25;
     this.hud.addLog(`Slew ${e.name} (+${e.type === 'broodmother' ? 140 : 65} XP)`, 'level');
@@ -676,7 +678,6 @@ export class PlatformerMode {
     if (e.type === 'broodmother') {
       soundEngine.playExplosion();
       particleSystem.emitShockwave(e.x, e.y, 3.5, '#ea580c');
-      combatEngine.addFloatingText(e.x, e.y - 1.2, '🔥 BROOD HATCHING! 🔥', 'crit');
       this.camera.addShake(0.7, 0.08);
 
       for (let w = 0; w < 4; w++) {
@@ -705,6 +706,8 @@ export class PlatformerMode {
 
   render() {
     if (!this.isActive || !this.level || !this.playerCtrl) return;
+
+    this.camera.handleResize(this.canvas.width, this.canvas.height);
 
     this.renderer.render(
       this.level,

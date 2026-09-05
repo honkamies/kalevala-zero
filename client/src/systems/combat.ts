@@ -25,8 +25,15 @@ export interface FloatingText {
 export class CombatEngine {
   public floatingTexts: FloatingText[] = [];
   public static readonly MAX_FLOATING_TEXTS = 50;
+  private pool: FloatingText[] = [];
+  private nextId = 0;
 
   clear() {
+    for (let i = 0; i < this.floatingTexts.length; i++) {
+      if (this.pool.length < CombatEngine.MAX_FLOATING_TEXTS) {
+        this.pool.push(this.floatingTexts[i]);
+      }
+    }
     this.floatingTexts.length = 0;
   }
 
@@ -36,6 +43,9 @@ export class CombatEngine {
       ft.life -= dt;
       ft.y -= 0.6 * dt; // Float up
       if (ft.life <= 0) {
+        if (this.pool.length < CombatEngine.MAX_FLOATING_TEXTS) {
+          this.pool.push(ft);
+        }
         this.floatingTexts[i] = this.floatingTexts[this.floatingTexts.length - 1];
         this.floatingTexts.pop();
       }
@@ -43,19 +53,32 @@ export class CombatEngine {
   }
 
   addFloatingText(x: number, y: number, text: string, type: FloatingText['type'] = 'physical') {
+    let ft: FloatingText;
     if (this.floatingTexts.length >= CombatEngine.MAX_FLOATING_TEXTS) {
-      this.floatingTexts[0] = this.floatingTexts[this.floatingTexts.length - 1];
-      this.floatingTexts.pop();
+      // Recycle the oldest element
+      ft = this.floatingTexts.shift()!;
+    } else if (this.pool.length > 0) {
+      ft = this.pool.pop()!;
+    } else {
+      ft = {
+        id: '',
+        x: 0,
+        y: 0,
+        text: '',
+        type: 'physical',
+        life: 0.8,
+        maxLife: 0.8
+      };
     }
-    this.floatingTexts.push({
-      id: Math.random().toString(),
-      x,
-      y: y - 0.4,
-      text,
-      type,
-      life: 0.8,
-      maxLife: 0.8
-    });
+
+    ft.id = String(++this.nextId);
+    ft.x = x;
+    ft.y = y - 0.4;
+    ft.text = text;
+    ft.type = type;
+    ft.life = 0.8;
+    ft.maxLife = 0.8;
+    this.floatingTexts.push(ft);
   }
 
   calculateDamage(

@@ -42,6 +42,7 @@ export class HUD {
   private cd4El!: HTMLElement;
   private cdPotEl!: HTMLElement;
   private potCountEl!: HTMLElement;
+  private arsenalTextEl!: HTMLElement;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -206,44 +207,50 @@ export class HUD {
         </div>
 
         <!-- Ability Hotbar (with Right-Click Aegis Shield & Archetype Special Attack) -->
-        <div class="action-bar">
-          <div class="ability-slot special" id="slot-ability-shield" title="[RIGHT CLICK] Aegis Energy Shield: 5s Invulnerable Barrier against Enemy Fire" style="border-color: #38bdf8; box-shadow: 0 0 14px rgba(56, 189, 248, 0.45); position: relative; overflow: hidden;">
-            <span class="ability-key" style="background:#38bdf8; color:#0f172a; font-weight:800; font-size: 9px; padding: 1px 3px;">RMB</span>
-            <span class="ability-icon" id="shield-ability-icon">🛡️</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-shield"></div>
-            <div class="special-charge-bar" id="shield-duration-fill" style="position: absolute; bottom: 0; left: 0; height: 4px; background: #38bdf8; width: 0%; box-shadow: 0 0 8px #7dd3fc;"></div>
+        <div style="display:flex; flex-direction:column; align-items:center; gap:5px;">
+          <div id="hud-arsenal-chip" style="display:flex; align-items:center; gap:6px; background:rgba(13,18,29,0.92); border:1px solid var(--border-glow); border-radius:4px; padding:3px 10px; pointer-events:none; box-shadow:0 4px 12px rgba(0,0,0,0.6);">
+            <span style="font-family:var(--font-mono); font-size:9.5px; color:var(--gold-runic); font-weight:800; letter-spacing:1px;">⚔️ ARSENAL:</span>
+            <span id="hud-arsenal-text" style="font-family:var(--font-mono); font-size:10.5px; color:#38bdf8; font-weight:700;">Slag War-Hammer</span>
           </div>
-          <div class="ability-slot special" id="slot-ability-special" title="[HOLD LMB / SPACE] Archetype Special Attack" style="border-color: #facc15; box-shadow: 0 0 14px rgba(250, 204, 21, 0.45); position: relative; overflow: hidden;">
-            <span class="ability-key" style="background:#facc15; color:#0f172a; font-weight:800; font-size: 9px; padding: 1px 3px;">HOLD</span>
-            <span class="ability-icon" id="special-ability-icon">⚡</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-special"></div>
-            <div class="special-charge-bar" id="special-charge-fill" style="position: absolute; bottom: 0; left: 0; height: 4px; background: #facc15; width: 0%; box-shadow: 0 0 8px #fef08a;"></div>
-          </div>
-          <div class="ability-slot" id="slot-ability-1" title="[1] Ukonvasara: Lightning EMP Slam">
-            <span class="ability-key">1</span>
-            <span class="ability-icon">⚡</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-1"></div>
-          </div>
-          <div class="ability-slot" id="slot-ability-2" title="[2] Kipinä Dash: Plasma Jet Roll">
-            <span class="ability-key">2</span>
-            <span class="ability-icon">🔥</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-2"></div>
-          </div>
-          <div class="ability-slot" id="slot-ability-3" title="[3] Tuoni Siphon: Shield Barrier">
-            <span class="ability-key">3</span>
-            <span class="ability-icon">🛡️</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-3"></div>
-          </div>
-          <div class="ability-slot" id="slot-ability-4" title="[4 / R] Sampo Overclock: Runic Frenzy">
-            <span class="ability-key">4</span>
-            <span class="ability-icon">⚙️</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-4"></div>
-          </div>
-          <div class="ability-slot" id="slot-potion" title="[Q / 5] Nano-Repair Injector">
-            <span class="ability-key">Q</span>
-            <span class="ability-icon">💉</span>
-            <span class="item-count" id="potion-count-badge">x3</span>
-            <div class="ability-cooldown-overlay" id="cd-overlay-pot"></div>
+          <div class="action-bar">
+            <div class="ability-slot special" id="slot-ability-shield" title="[RIGHT CLICK] Aegis Energy Shield: 5s Invulnerable Barrier against Enemy Fire" style="border-color: #38bdf8; box-shadow: 0 0 14px rgba(56, 189, 248, 0.45); position: relative; overflow: hidden;">
+              <span class="ability-key" style="background:#38bdf8; color:#0f172a; font-weight:800; font-size: 9px; padding: 1px 3px;">RMB</span>
+              <span class="ability-icon" id="shield-ability-icon">🛡️</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-shield"></div>
+              <div class="special-charge-bar" id="shield-duration-fill" style="position: absolute; bottom: 0; left: 0; height: 4px; background: #38bdf8; width: 0%; box-shadow: 0 0 8px #7dd3fc;"></div>
+            </div>
+            <div class="ability-slot special" id="slot-ability-special" title="[HOLD LMB / SPACE] Archetype Special Attack" style="border-color: #facc15; box-shadow: 0 0 14px rgba(250, 204, 21, 0.45); position: relative; overflow: hidden;">
+              <span class="ability-key" style="background:#facc15; color:#0f172a; font-weight:800; font-size: 9px; padding: 1px 3px;">HOLD</span>
+              <span class="ability-icon" id="special-ability-icon">⚡</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-special"></div>
+              <div class="special-charge-bar" id="special-charge-fill" style="position: absolute; bottom: 0; left: 0; height: 4px; background: #facc15; width: 0%; box-shadow: 0 0 8px #fef08a;"></div>
+            </div>
+            <div class="ability-slot" id="slot-ability-1" title="[1] Ukonvasara: Lightning EMP Slam">
+              <span class="ability-key">1</span>
+              <span class="ability-icon">⚡</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-1"></div>
+            </div>
+            <div class="ability-slot" id="slot-ability-2" title="[2] Kipinä Dash: Plasma Jet Roll">
+              <span class="ability-key">2</span>
+              <span class="ability-icon">🔥</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-2"></div>
+            </div>
+            <div class="ability-slot" id="slot-ability-3" title="[3] Tuoni Siphon: Shield Barrier">
+              <span class="ability-key">3</span>
+              <span class="ability-icon">🛡️</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-3"></div>
+            </div>
+            <div class="ability-slot" id="slot-ability-4" title="[4 / R] Sampo Overclock: Runic Frenzy">
+              <span class="ability-key">4</span>
+              <span class="ability-icon">⚙️</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-4"></div>
+            </div>
+            <div class="ability-slot" id="slot-potion" title="[Q / 5] Nano-Repair Injector">
+              <span class="ability-key">Q</span>
+              <span class="ability-icon">💉</span>
+              <span class="item-count" id="potion-count-badge">x3</span>
+              <div class="ability-cooldown-overlay" id="cd-overlay-pot"></div>
+            </div>
           </div>
         </div>
 
@@ -289,6 +296,7 @@ export class HUD {
     this.cd4El = document.getElementById('cd-overlay-4')!;
     this.cdPotEl = document.getElementById('cd-overlay-pot')!;
     this.potCountEl = document.getElementById('potion-count-badge')!;
+    this.arsenalTextEl = document.getElementById('hud-arsenal-text')!;
   }
 
   addLog(text: string, type: LogType = 'system') {
@@ -361,6 +369,16 @@ export class HUD {
     const scrapValEl = document.getElementById('hud-scrap-val');
     if (scrapValEl) {
       scrapValEl.textContent = (player.naniteScrap || 0).toLocaleString();
+    }
+
+    // Active Concurrent Arsenal Weapon Display
+    if (this.arsenalTextEl) {
+      const activeWpns = player.getActiveWeapons();
+      const parts = activeWpns.map((w, idx) => {
+        const isBase = idx === 0 && player.baseWeapon && (w.id === player.baseWeapon.id);
+        return `${isBase ? '⭐ ' : ''}${w.name}`;
+      });
+      this.arsenalTextEl.textContent = parts.length > 0 ? parts.join(' + ') : 'None';
     }
 
     // Draw HUD Hero Avatar

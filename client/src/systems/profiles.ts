@@ -2,7 +2,7 @@
 // Supports multiple character save slots, fresh zero-stat profile creation, per-profile reset, and total game wipe
 
 import { CharacterAppearance, Player, PlayerStats } from '../entities/player';
-import { Item, ItemSlot, getStarterWeaponForArchetype } from './items';
+import { Item, ItemSlot, getStarterWeaponForArchetype, isBaseWeaponMatchingArchetype } from './items';
 
 export interface ProfilePlayerData {
   id: string;
@@ -14,6 +14,7 @@ export interface ProfilePlayerData {
   naniteScrap: number;
   inventory: Item[];
   equipment: Partial<Record<ItemSlot, Item>>;
+  baseWeapon?: Item;
 }
 
 export interface GameProfile {
@@ -58,14 +59,36 @@ export function createDefaultPlayerData(id: string, name: string, appearance: Ch
     xp: 0,
     naniteScrap: 150,
     inventory: [],
-    equipment: {
-      mainHand: starterWeapon
-    }
+    equipment: {},
+    baseWeapon: starterWeapon
   };
 }
 
 export function playerFromProfileData(data: ProfilePlayerData): Player {
-  const p = new Player(data.id, data.name, data.appearance, data.stats, data.inventory, data.equipment);
+  const arch = data.appearance?.archetype || 'soturi';
+  const starterWeapon = getStarterWeaponForArchetype(arch);
+
+  let baseWpn = data.baseWeapon;
+  if (!baseWpn || !isBaseWeaponMatchingArchetype(baseWpn, arch)) {
+    const prevUpgrade = baseWpn?.upgradeLevel || 0;
+    baseWpn = { ...starterWeapon };
+    if (prevUpgrade > 0) {
+      baseWpn.upgradeLevel = prevUpgrade;
+    }
+    data.baseWeapon = baseWpn;
+  }
+
+  // Equipment slots are for mix & match extra weapons. Clean up legacy starter weapon from mainHand.
+  const equipment = data.equipment ? { ...data.equipment } : {};
+  if (equipment.mainHand) {
+    const m = equipment.mainHand;
+    if (m.id === 'starter_blade' || m.id?.startsWith('starter_') || m.name === baseWpn.name || m.id === baseWpn.id) {
+      delete equipment.mainHand;
+      data.equipment = equipment;
+    }
+  }
+
+  const p = new Player(data.id, data.name, data.appearance, data.stats, data.inventory, equipment, baseWpn);
   p.level = data.level || 1;
   p.xp = data.xp || 0;
   p.naniteScrap = data.naniteScrap !== undefined ? data.naniteScrap : 150;
@@ -85,7 +108,8 @@ export function profileDataFromPlayer(player: Player): ProfilePlayerData {
     xp: player.xp,
     naniteScrap: player.naniteScrap,
     inventory: player.inventory ? JSON.parse(JSON.stringify(player.inventory)) : [],
-    equipment: player.equipment ? JSON.parse(JSON.stringify(player.equipment)) : {}
+    equipment: player.equipment ? JSON.parse(JSON.stringify(player.equipment)) : {},
+    baseWeapon: player.baseWeapon ? JSON.parse(JSON.stringify(player.baseWeapon)) : undefined
   };
 }
 
@@ -122,6 +146,44 @@ export class ProfileManager {
     } else {
       this.activeProfileId = null;
     }
+
+    // Sanitize and validate every loaded profile to ensure signature base weapons are equipped
+    this.profiles.forEach(prof => {
+      const arch = prof.archetype || prof.playerData?.appearance?.archetype || 'soturi';
+      prof.archetype = arch;
+      if (prof.playerData) {
+        if (!prof.playerData.appearance) {
+          prof.playerData.appearance = {
+            phenotype: 'cyber_runic',
+            hairStyle: 'cyber_braids',
+            hairColor: '#38bdf8',
+            skinTone: '#94a3b8',
+            warPaint: 'ukko_spark',
+            implant: 'neural_loom',
+            archetype: arch
+          };
+        } else {
+          prof.playerData.appearance.archetype = arch;
+        }
+
+        if (!prof.playerData.baseWeapon || !isBaseWeaponMatchingArchetype(prof.playerData.baseWeapon, arch)) {
+          const prevUpgrade = prof.playerData.baseWeapon?.upgradeLevel || 0;
+          const starterWpn = getStarterWeaponForArchetype(arch);
+          if (prevUpgrade > 0) {
+            starterWpn.upgradeLevel = prevUpgrade;
+          }
+          prof.playerData.baseWeapon = starterWpn;
+        }
+
+        if (prof.playerData.equipment?.mainHand) {
+          const m = prof.playerData.equipment.mainHand;
+          if (m.id === 'starter_blade' || m.id?.startsWith('starter_') || m.name === prof.playerData.baseWeapon.name || m.id === prof.playerData.baseWeapon.id) {
+            delete prof.playerData.equipment.mainHand;
+          }
+        }
+      }
+    });
+    this.saveToStorage();
   }
 
   // Auto-migrate old single-slot save data to the new multi-profile system
@@ -269,16 +331,29 @@ export class ProfileManager {
     this.mirrorActiveProfileToLegacy(activeProf);
   }
 
-  // Update existing profile's appearance/callsign without resetting stats
+  // Update existing profile's appearance/callsign; if archetype changes, sync base weapon & stats
   updateProfileAppearance(profileId: string, name: string, appearance: CharacterAppearance): GameProfile | null {
     const prof = this.profiles.find(p => p.id === profileId);
     if (!prof) return null;
 
+    const oldArch = prof.archetype;
     prof.name = name.trim() || prof.name;
     prof.archetype = appearance.archetype;
     prof.playerData.name = prof.name;
     prof.playerData.appearance = { ...appearance };
     prof.lastPlayed = Date.now();
+
+    // If archetype changed or base weapon is mismatched, update base weapon and base stats
+    if (oldArch !== appearance.archetype || !prof.playerData.baseWeapon || !isBaseWeaponMatchingArchetype(prof.playerData.baseWeapon, appearance.archetype)) {
+      prof.playerData.baseWeapon = getStarterWeaponForArchetype(appearance.archetype);
+      prof.playerData.stats = getDefaultStatsForArchetype(appearance.archetype);
+      if (prof.playerData.equipment?.mainHand) {
+        const m = prof.playerData.equipment.mainHand;
+        if (m.id === 'starter_blade' || m.id?.startsWith('starter_') || m.name === prof.playerData.baseWeapon.name || m.id === prof.playerData.baseWeapon.id) {
+          delete prof.playerData.equipment.mainHand;
+        }
+      }
+    }
 
     this.saveToStorage();
     if (this.activeProfileId === profileId) {

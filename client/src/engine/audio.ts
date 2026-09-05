@@ -130,6 +130,7 @@ export class SoundEngine {
   private currentBiome: string = 'vainola';
   private crossfadeInterval: any = null;
   private playHistory: string[] = [];
+  private sfxThrottle: Map<string, number> = new Map();
 
   // Callbacks
   private trackChangeListeners: ((track: MusicTrackInfo | null, isPlaying: boolean) => void)[] = [];
@@ -818,6 +819,13 @@ export class SoundEngine {
   ): boolean {
     if (!this.ctx || this.settings.muted) return false;
     this.resume();
+
+    const now = performance.now();
+    const lastPlay = this.sfxThrottle.get(key) || 0;
+    if (now - lastPlay < 24) {
+      return false;
+    }
+    this.sfxThrottle.set(key, now);
 
     const buffers = this.sampleCache.get(key);
     if (!buffers || buffers.length === 0) return false;

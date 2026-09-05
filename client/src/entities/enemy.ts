@@ -229,7 +229,6 @@ export class Enemy {
         this.runAttackCooldown = 4.5 + Math.random() * 1.5;
         soundEngine.playMeleeSwing();
         particleSystem.emitShockwave(this.x, this.y, 1.8, '#f59e0b');
-        combatEngine.addFloatingText(this.x, this.y, '⚡ RUN ATTACK! ⚡', 'crit');
         return;
       }
     }
@@ -316,12 +315,10 @@ export class Enemy {
       this.isEnraged = true;
       soundEngine.playLevelUp();
       particleSystem.emitShockwave(this.x, this.y, 8.0, '#ef4444');
-      combatEngine.addFloatingText(this.x, this.y, '🔥 ENRAGED // MAXIMUM DESTRUCTION 🔥', 'crit');
     } else if (hpRatio <= 0.65 && this.bossPhase === 1) {
       this.bossPhase = 2;
       soundEngine.playLevelUp();
       particleSystem.emitShockwave(this.x, this.y, 6.0, this.color);
-      combatEngine.addFloatingText(this.x, this.y, 'PHASE 2: WEAPONS OVERCHARGED!', 'crit');
     }
 
     const speedMod = (this.isEnraged ? 1.45 : this.bossPhase === 2 ? 1.25 : 1.0);

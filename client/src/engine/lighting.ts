@@ -13,6 +13,7 @@ export interface LightSource {
 export class LightingEngine {
   public lights: LightSource[] = [];
   public ambientColor: string = 'rgba(8, 14, 26, 0.88)';
+  private cachedPts: { x: number; y: number }[] = [];
 
   setBiomeAmbient(biome: string) {
     switch (biome) {
@@ -111,27 +112,31 @@ export class LightingEngine {
       sightGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
 
       ctx.save();
-      // Polished soft edge blur (6px) for smooth organic revealed area borders
-      ctx.filter = 'blur(6px)';
       ctx.fillStyle = sightGrad;
 
       if (visionPolygon && visionPolygon.length > 2) {
-        // Base ground polygon
-        const pts: { x: number; y: number }[] = [];
-        for (let i = 0; i < visionPolygon.length; i++) {
-          pts.push(worldToScreen(visionPolygon[i].x, visionPolygon[i].y, 0));
+        // Base ground polygon (reuse cached points to eliminate 96 object allocations every frame)
+        const vLen = visionPolygon.length;
+        while (this.cachedPts.length < vLen) {
+          this.cachedPts.push({ x: 0, y: 0 });
+        }
+        for (let i = 0; i < vLen; i++) {
+          const sp = worldToScreen(visionPolygon[i].x, visionPolygon[i].y, 0);
+          this.cachedPts[i].x = sp.x;
+          this.cachedPts[i].y = sp.y;
         }
 
         ctx.beginPath();
-        const len = pts.length;
-        const firstMidX = (pts[len - 1].x + pts[0].x) / 2;
-        const firstMidY = (pts[len - 1].y + pts[0].y) / 2;
+        const len = vLen;
+        const pts = this.cachedPts;
+        const firstMidX = (pts[len - 1].x + pts[0].x) * 0.5;
+        const firstMidY = (pts[len - 1].y + pts[0].y) * 0.5;
         ctx.moveTo(firstMidX, firstMidY);
 
         for (let i = 0; i < len; i++) {
           const next = pts[(i + 1) % len];
-          const midX = (pts[i].x + next.x) / 2;
-          const midY = (pts[i].y + next.y) / 2;
+          const midX = (pts[i].x + next.x) * 0.5;
+          const midY = (pts[i].y + next.y) * 0.5;
           ctx.quadraticCurveTo(pts[i].x, pts[i].y, midX, midY);
         }
         ctx.closePath();
@@ -143,8 +148,8 @@ export class LightingEngine {
         ctx.moveTo(firstMidX, firstMidY - heightLift);
         for (let i = 0; i < len; i++) {
           const next = pts[(i + 1) % len];
-          const midX = (pts[i].x + next.x) / 2;
-          const midY = ((pts[i].y + next.y) / 2) - heightLift;
+          const midX = (pts[i].x + next.x) * 0.5;
+          const midY = ((pts[i].y + next.y) * 0.5) - heightLift;
           ctx.quadraticCurveTo(pts[i].x, pts[i].y - heightLift, midX, midY);
         }
         ctx.closePath();

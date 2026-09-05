@@ -2,7 +2,7 @@
 // Interactive Real-Time Canvas Blueprint Preview for Archetypes, War Paint & Implants
 
 import { CharacterAppearance, Player, getDefaultStatsForArchetype } from '../entities/player';
-import { getStarterWeaponForArchetype } from '../systems/items';
+import { getStarterWeaponForArchetype, isBaseWeaponMatchingArchetype } from '../systems/items';
 import { soundEngine } from '../engine/audio';
 import { HeroRenderer } from '../engine/hero_renderer';
 
@@ -92,7 +92,7 @@ export class CharacterCreationUI {
               <div class="archetype-btn ${currentArch === 'tietäjä' ? 'active' : ''}" data-arch="tietäjä">
                 <div>
                   <div class="arch-name">🔮 TIETÄJÄ (Void Cyber-Shaman)</div>
-                  <div class="arch-role">Starts with <strong>Alinen Magma Staff</strong>. Channels explosive plasma orbs, void death ray siphon, and rapid energy shield regeneration (+25% Elemental Dmg).</div>
+                  <div class="arch-role">Starts with <strong>Tuonela Void-Spire</strong>. Projects continuous void death-ray beams with life/shield siphon, and rapid energy shield regeneration (+25% Elemental Dmg).</div>
                 </div>
               </div>
               <div class="archetype-btn ${currentArch === 'runoseppä' ? 'active' : ''}" data-arch="runoseppä">
@@ -198,9 +198,27 @@ export class CharacterCreationUI {
         name = isCreatingNew ? 'Operative-Zero' : (existingPlayer ? existingPlayer.name : 'Wanderer-Zero');
       }
 
+      const isArchetypeChanged = !!existingPlayer && existingPlayer.appearance.archetype !== this.currentAppearance.archetype;
       const defaultStats = getDefaultStatsForArchetype(this.currentAppearance.archetype);
-      const stats = (!isCreatingNew && existingPlayer) ? { ...existingPlayer.stats } : defaultStats;
+      const stats = (!isCreatingNew && existingPlayer && !isArchetypeChanged) ? { ...existingPlayer.stats } : defaultStats;
       const starterWeapon = getStarterWeaponForArchetype(this.currentAppearance.archetype);
+
+      let chosenBaseWeapon = starterWeapon;
+      if (!isCreatingNew && existingPlayer && !isArchetypeChanged && existingPlayer.baseWeapon) {
+        if (isBaseWeaponMatchingArchetype(existingPlayer.baseWeapon, this.currentAppearance.archetype)) {
+          chosenBaseWeapon = existingPlayer.baseWeapon;
+        }
+      }
+
+      const playerEquipment = (!isCreatingNew && existingPlayer && !isArchetypeChanged) ? { ...existingPlayer.equipment } : {};
+      if (playerEquipment.mainHand) {
+        if (playerEquipment.mainHand.id?.startsWith('starter_') ||
+            playerEquipment.mainHand.id === 'starter_blade' ||
+            playerEquipment.mainHand.name === chosenBaseWeapon.name ||
+            playerEquipment.mainHand.id === chosenBaseWeapon.id) {
+          delete playerEquipment.mainHand;
+        }
+      }
 
       const player = new Player(
         (!isCreatingNew && existingPlayer) ? existingPlayer.id : ('chr_' + Math.random().toString(36).substring(2, 9)),
@@ -208,7 +226,8 @@ export class CharacterCreationUI {
         this.currentAppearance,
         stats,
         (!isCreatingNew && existingPlayer) ? existingPlayer.inventory : [],
-        (!isCreatingNew && existingPlayer) ? existingPlayer.equipment : { mainHand: starterWeapon }
+        playerEquipment,
+        chosenBaseWeapon
       );
 
       if (!isCreatingNew && existingPlayer) {
@@ -268,9 +287,9 @@ export class CharacterCreationUI {
     if (arch === 'soturi') {
       descEl.textContent = 'Armed with the Slag War-Hammer & Heavy Titanium Plating. Generates devastating 360° seismic ground quakes. Upgrades into concentric aftershock shockwaves and barrier-shattering areal impacts.';
     } else if (arch === 'runoseppä') {
-      descEl.textContent = 'Master of ancient origin words (Syntysanat) and nanite transmutation. Wields the Virsikannel Lyric Resonator, projecting harmonic singing chords that upgrade into wide room-clearing acoustic fans.';
+      descEl.textContent = 'Master of ancient origin words (Syntysanat) and nanite transmutation. Wields the Virsikannel Lyric Resonator, projecting harmonic singing chords that upgrade into wide room-clearing acoustic shock fans.';
     } else if (arch === 'tietäjä') {
-      descEl.textContent = 'Wields the Alinen Magma Staff & Floating Void Focus. Channels searing plasma orbs and void death ray siphons. Upgrades into multi-orb volleys and barrier disruption.';
+      descEl.textContent = 'Wields the Tuonela Void-Spire & Floating Void Focus. Projects continuous void death-ray beams that siphon vitality and shields. Upgrades into multi-beam disruption and barrier siphons.';
     } else if (arch === 'korvenraivaaja') {
       descEl.textContent = 'Armed with the Scrap Rail-Rifle & Targeting Monocle. Extreme sniper range, high-velocity armor penetration, and rapid rolls. Upgrades into multi-slug piercing volleys.';
     }

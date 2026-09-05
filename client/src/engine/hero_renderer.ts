@@ -211,7 +211,7 @@ export class HeroRenderer {
     if (sprite) {
       if (options?.isDying) {
         ctx.save();
-        ctx.filter = 'brightness(4.5) contrast(2.0) drop-shadow(0 0 25px rgba(239, 68, 68, 1)) drop-shadow(0 0 12px #ffffff)';
+        ctx.filter = 'brightness(3.5) contrast(1.6)';
         ctx.drawImage(sprite, hx, hy, spriteSize, spriteSize);
         ctx.restore();
 
@@ -222,13 +222,11 @@ export class HeroRenderer {
           ctx.lineTo(hx + Math.random() * spriteSize, hy + Math.random() * spriteSize);
           ctx.strokeStyle = Math.random() > 0.5 ? '#ef4444' : '#38bdf8';
           ctx.lineWidth = 2.5 * scale;
-          ctx.shadowColor = '#ffffff';
-          ctx.shadowBlur = 8;
           ctx.stroke();
         }
       } else if (options?.isHurt) {
         ctx.save();
-        ctx.filter = 'brightness(3.2) contrast(1.4) drop-shadow(0 0 10px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 5px #38bdf8)';
+        ctx.filter = 'brightness(2.6) contrast(1.3)';
         ctx.drawImage(sprite, hx, hy, spriteSize, spriteSize);
         ctx.restore();
       } else {

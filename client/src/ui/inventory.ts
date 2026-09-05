@@ -1,6 +1,6 @@
 // Inventory & Equipment Paperdoll Modal UI with Live Comparison Matrix & Side-by-Side Dual Tooltips
 
-import { Player } from '../entities/player';
+import { Player, CUMULATIVE_WEAPON_SLOTS, WEAPON_SLOT_UNLOCK_CONFIGS } from '../entities/player';
 import { Item, ItemSlot, getWeaponCategory, getWeaponCategoryMeta } from '../systems/items';
 import { soundEngine } from '../engine/audio';
 
@@ -106,22 +106,47 @@ export class InventoryUI {
                   <div class="equip-slot" data-slot="relic">
                     <span class="equip-slot-label">RELIC</span>
                   </div>
-                  <div class="equip-slot" data-slot="mainHand">
-                    <span class="equip-slot-label">WEAPON</span>
+                  <div class="equip-slot" data-slot="chest">
+                    <span class="equip-slot-label">CHEST</span>
                   </div>
                   <div class="equip-slot" data-slot="offHand">
                     <span class="equip-slot-label">OFF-HAND</span>
                   </div>
-                  <div class="equip-slot" data-slot="chest">
-                    <span class="equip-slot-label">CHEST</span>
-                  </div>
-                  <div class="equip-slot" data-slot="legs">
+                  <div class="equip-slot" data-slot="legs" style="grid-column: span 2; width: 64px; justify-self: center;">
                     <span class="equip-slot-label">LEGS</span>
                   </div>
                 </div>
               </div>
 
-              <div style="width:100%; border-top:1px solid var(--border-dim); padding-top:8px; font-family:var(--font-mono); font-size:12px;">
+              <!-- CUMULATIVE ARSENAL (CONCURRENT FIRING WEAPONS) -->
+              <div style="width:100%; border-top:1px solid var(--border-dim); padding-top:6px; margin-top:4px; z-index:2;">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
+                  <span style="font-family:var(--font-rune); font-size:11px; color:var(--gold-runic); letter-spacing:0.5px;">⚔️ CUMULATIVE ARSENAL</span>
+                  <span style="font-family:var(--font-mono); font-size:10px; color:var(--cyan-core);">${player.getActiveWeapons().length} CONCURRENT FIRING</span>
+                </div>
+                <div class="arsenal-slots-row" style="display:flex; gap:4px; justify-content:space-between; align-items:center;">
+                  <div class="equip-slot arsenal-slot arsenal-base-slot" data-slot="baseWeapon" style="width:43px; height:43px; border-color:#f59e0b; box-shadow:0 0 6px rgba(245,158,11,0.4);" title="Archetype Innate Weapon (Permanent concurrent firing)">
+                    <span class="equip-slot-label" style="font-size:7.5px; color:#f59e0b;">⭐BASE</span>
+                  </div>
+                  <div class="equip-slot arsenal-slot" data-slot="mainHand" style="width:43px; height:43px;" title="Weapon Slot 1">
+                    <span class="equip-slot-label" style="font-size:7.5px;">WPN 1</span>
+                  </div>
+                  <div class="equip-slot arsenal-slot" data-slot="weapon2" style="width:43px; height:43px;" title="Weapon Slot 2">
+                    <span class="equip-slot-label" style="font-size:7.5px;">WPN 2</span>
+                  </div>
+                  <div class="equip-slot arsenal-slot" data-slot="weapon3" style="width:43px; height:43px;" title="Weapon Slot 3">
+                    <span class="equip-slot-label" style="font-size:7.5px;">WPN 3</span>
+                  </div>
+                  <div class="equip-slot arsenal-slot" data-slot="weapon4" style="width:43px; height:43px;" title="Weapon Slot 4">
+                    <span class="equip-slot-label" style="font-size:7.5px;">WPN 4</span>
+                  </div>
+                  <div class="equip-slot arsenal-slot" data-slot="weapon5" style="width:43px; height:43px;" title="Weapon Slot 5">
+                    <span class="equip-slot-label" style="font-size:7.5px;">WPN 5</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style="width:100%; border-top:1px solid var(--border-dim); padding-top:6px; margin-top:6px; font-family:var(--font-mono); font-size:12px;">
                 <div style="display:flex; justify-content:space-between; margin-bottom:3px;">
                   <span style="color:var(--text-muted);">TOTAL ARMOR:</span>
                   <span style="color:var(--cyan-core); font-weight:700;">${player.armor}</span>
@@ -211,11 +236,29 @@ export class InventoryUI {
     highlighted.forEach(el => el.classList.remove('slot-highlight-target'));
   }
 
+  private positionTooltip(e: MouseEvent, width: number = 340, height: number = 180) {
+    if (!this.tooltipEl) return;
+    let left = e.clientX + 16;
+    if (left + width > window.innerWidth - 15) {
+      left = Math.max(10, e.clientX - width - 16);
+    }
+    let top = e.clientY - 20;
+    if (top + height > window.innerHeight - 15) {
+      top = Math.max(10, window.innerHeight - height - 15);
+    }
+    this.tooltipEl.style.left = `${left}px`;
+    this.tooltipEl.style.top = `${top}px`;
+  }
+
   public getSlotDisplayName(slot: ItemSlot): string {
     const slotNames: Record<ItemSlot, string> = {
       head: 'HEAD',
       relic: 'RELIC',
-      mainHand: 'WEAPON',
+      mainHand: 'WPN 1',
+      weapon2: 'WPN 2',
+      weapon3: 'WPN 3',
+      weapon4: 'WPN 4',
+      weapon5: 'WPN 5',
       offHand: 'OFF-HAND',
       chest: 'CHEST',
       legs: 'LEGS'
@@ -225,10 +268,46 @@ export class InventoryUI {
 
   private renderEquipment(player: Player) {
     if (!this.modalEl) return;
-    const slots: ItemSlot[] = ['head', 'relic', 'mainHand', 'offHand', 'chest', 'legs'];
 
-    slots.forEach(slot => {
-      const slotEl = this.modalEl!.querySelector(`[data-slot="${slot}"]`) as HTMLElement;
+    // 1. Render Innate Archetype Base Weapon
+    const baseSlotEl = this.modalEl.querySelector('[data-slot="baseWeapon"]') as HTMLElement;
+    if (baseSlotEl && player.baseWeapon) {
+      const item = player.baseWeapon;
+      baseSlotEl.innerHTML = `<span class="equip-slot-label" style="font-size:7.5px; color:#f59e0b; font-weight:800;">⭐BASE</span>`;
+      baseSlotEl.classList.remove('rarity-common', 'rarity-augmented', 'rarity-runic', 'rarity-masterwork', 'rarity-relic');
+      baseSlotEl.classList.add('filled', `rarity-${item.rarity}`);
+
+      const iconSpan = document.createElement('span');
+      iconSpan.style.fontSize = '22px';
+      iconSpan.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))';
+      iconSpan.textContent = this.getItemEmoji(item);
+      baseSlotEl.appendChild(iconSpan);
+
+      const elemBadge = this.getElementBadge(item);
+      if (elemBadge) baseSlotEl.insertAdjacentHTML('beforeend', elemBadge);
+
+      if (item.upgradeLevel && item.upgradeLevel > 0) {
+        baseSlotEl.insertAdjacentHTML(
+          'beforeend',
+          `<span class="item-upgrade-badge" style="position:absolute; top:2px; right:3px; font-family:var(--font-mono); font-size:9px; font-weight:800; color:#38bdf8; text-shadow:0 0 5px rgba(56,189,248,0.9); z-index:4;">+${item.upgradeLevel}</span>`
+        );
+      }
+
+      baseSlotEl.onmouseenter = (e) => {
+        this.showTooltip(item, e, player, false);
+      };
+      baseSlotEl.onmouseleave = () => {
+        this.hideTooltip();
+      };
+      baseSlotEl.onclick = () => {
+        soundEngine.playRuneClick();
+      };
+    }
+
+    // 2. Render Defensive Gear Slots
+    const defensiveSlots: ItemSlot[] = ['head', 'relic', 'chest', 'offHand', 'legs'];
+    defensiveSlots.forEach(slot => {
+      const slotEl = this.modalEl!.querySelector(`.equipment-grid [data-slot="${slot}"]`) as HTMLElement;
       if (!slotEl) return;
 
       const item = player.equipment[slot];
@@ -244,13 +323,11 @@ export class InventoryUI {
         iconSpan.textContent = this.getItemEmoji(item);
         slotEl.appendChild(iconSpan);
 
-        // Elemental pip badge
         const elemBadge = this.getElementBadge(item);
         if (elemBadge) {
           slotEl.insertAdjacentHTML('beforeend', elemBadge);
         }
 
-        // Upgrade Level Badge (+N)
         if (item.upgradeLevel && item.upgradeLevel > 0) {
           slotEl.insertAdjacentHTML(
             'beforeend',
@@ -258,7 +335,6 @@ export class InventoryUI {
           );
         }
 
-        // Hover tooltip (Equipped Item Mode)
         slotEl.onmouseenter = (e) => {
           this.highlightSlot(slot);
           this.showTooltip(item, e, player, false);
@@ -268,7 +344,6 @@ export class InventoryUI {
           this.hideTooltip();
         };
 
-        // Click to unequip
         slotEl.onclick = () => {
           this.clearHighlight();
           this.hideTooltip();
@@ -287,6 +362,105 @@ export class InventoryUI {
       } else {
         slotEl.onmouseenter = null;
         slotEl.onmouseleave = null;
+        slotEl.onclick = null;
+      }
+    });
+
+    // 3. Render Arsenal Weapon Slots (WPN 1 to WPN 5)
+    CUMULATIVE_WEAPON_SLOTS.forEach(slot => {
+      const slotEl = this.modalEl!.querySelector(`.arsenal-slots-row [data-slot="${slot}"]`) as HTMLElement;
+      if (!slotEl) return;
+
+      const conf = WEAPON_SLOT_UNLOCK_CONFIGS.find(u => u.slot === slot);
+      const isUnlocked = player.isWeaponSlotUnlocked(slot);
+      const item = player.equipment[slot];
+
+      slotEl.classList.remove('filled', 'slot-locked', 'rarity-common', 'rarity-augmented', 'rarity-runic', 'rarity-masterwork', 'rarity-relic');
+
+      if (!isUnlocked) {
+        slotEl.classList.add('slot-locked');
+        slotEl.style.opacity = '0.45';
+        slotEl.style.border = '1px dashed #64748b';
+        slotEl.innerHTML = `<span style="font-size:15px;">🔒</span><span class="equip-slot-label" style="font-size:7px; color:#94a3b8;">LVL ${conf?.reqLevel}</span>`;
+        slotEl.onmouseenter = (e) => {
+          if (!this.tooltipEl) return;
+          this.tooltipEl.style.display = 'block';
+          this.tooltipEl.innerHTML = `
+            <div style="padding:10px; font-family:var(--font-mono); font-size:12px; color:#e2e8f0; background:rgba(15,23,42,0.95); border:1px solid #64748b; border-radius:6px; box-shadow:0 0 16px rgba(0,0,0,0.8);">
+              <div style="color:#f59e0b; font-weight:700; margin-bottom:4px;">🔒 LOCKED ARSENAL WEAPON SLOT</div>
+              <div style="color:var(--text-muted); font-size:11px;">Unlocks at <strong style="color:var(--cyan-core);">Level ${conf?.reqLevel}</strong> (or ${conf?.reqClears} Sector Clears).</div>
+              <div style="margin-top:6px; font-size:11px; color:#94a3b8;">When unlocked, equipping a weapon adds simultaneous concurrent firing with your entire arsenal!</div>
+            </div>
+          `;
+          this.positionTooltip(e);
+        };
+        slotEl.onmouseleave = () => this.hideTooltip();
+        slotEl.onclick = () => soundEngine.playRuneClick();
+        return;
+      }
+
+      slotEl.style.opacity = '1';
+      slotEl.style.border = '1px solid var(--border-dim)';
+
+      if (item) {
+        slotEl.classList.add('filled', `rarity-${item.rarity}`);
+        slotEl.innerHTML = `<span class="equip-slot-label" style="font-size:7.5px;">${conf?.label || 'WPN'}</span>`;
+        const iconSpan = document.createElement('span');
+        iconSpan.style.fontSize = '22px';
+        iconSpan.style.filter = 'drop-shadow(0 2px 4px rgba(0,0,0,0.8))';
+        iconSpan.textContent = this.getItemEmoji(item);
+        slotEl.appendChild(iconSpan);
+
+        const elemBadge = this.getElementBadge(item);
+        if (elemBadge) slotEl.insertAdjacentHTML('beforeend', elemBadge);
+
+        if (item.upgradeLevel && item.upgradeLevel > 0) {
+          slotEl.insertAdjacentHTML(
+            'beforeend',
+            `<span class="item-upgrade-badge" style="position:absolute; top:2px; right:3px; font-family:var(--font-mono); font-size:9px; font-weight:800; color:#38bdf8; text-shadow:0 0 5px rgba(56,189,248,0.9); z-index:4;">+${item.upgradeLevel}</span>`
+          );
+        }
+
+        slotEl.onmouseenter = (e) => {
+          this.highlightSlot(slot);
+          this.showTooltip(item, e, player, false);
+        };
+        slotEl.onmouseleave = () => {
+          this.clearHighlight();
+          this.hideTooltip();
+        };
+
+        slotEl.onclick = () => {
+          this.clearHighlight();
+          this.hideTooltip();
+          if (player.inventory.length >= 30) {
+            alert('Inventory full! Salvage items to free space.');
+            return;
+          }
+          player.inventory.push(item);
+          delete player.equipment[slot];
+          player.recalculateDerivedStats();
+          soundEngine.playRuneClick();
+          this.selectedComparisonItem = null;
+          this.onPlayerUpdate();
+          this.open(player);
+        };
+      } else {
+        slotEl.style.border = '1px dashed rgba(56, 189, 248, 0.4)';
+        slotEl.innerHTML = `<span class="equip-slot-label" style="font-size:7.5px; color:var(--cyan-core);">${conf?.label || 'WPN'}</span><span style="font-size:15px; color:rgba(56,189,248,0.6); font-weight:700;">+</span>`;
+        slotEl.onmouseenter = (e) => {
+          if (!this.tooltipEl) return;
+          this.tooltipEl.style.display = 'block';
+          this.tooltipEl.innerHTML = `
+            <div style="padding:10px; font-family:var(--font-mono); font-size:12px; color:#e2e8f0; background:rgba(15,23,42,0.95); border:1px solid var(--cyan-core); border-radius:6px; box-shadow:0 0 16px rgba(0,0,0,0.8);">
+              <div style="color:var(--cyan-core); font-weight:700; margin-bottom:4px;">⚡ UNLOCKED ARSENAL SLOT (${conf?.label})</div>
+              <div style="color:var(--text-muted); font-size:11px;">Click any weapon in your backpack to equip it here.</div>
+              <div style="margin-top:6px; font-size:11px; color:#10b981;">Equipped weapons fire simultaneously alongside your base weapon and all other weapons!</div>
+            </div>
+          `;
+          this.positionTooltip(e);
+        };
+        slotEl.onmouseleave = () => this.hideTooltip();
         slotEl.onclick = null;
       }
     });
@@ -332,7 +506,11 @@ export class InventoryUI {
 
         // Tooltip & Dynamic Comparison Update on Hover
         slotEl.onmouseenter = (e) => {
-          if (item.slot) {
+          if (item.type === 'weapon') {
+            const unlockedSlots = CUMULATIVE_WEAPON_SLOTS.filter(s => player.isWeaponSlotUnlocked(s));
+            const emptySlot = unlockedSlots.find(s => !player.equipment[s]);
+            this.highlightSlot(emptySlot || 'mainHand');
+          } else if (item.slot) {
             this.highlightSlot(item.slot);
           } else {
             this.clearHighlight();
@@ -363,6 +541,28 @@ export class InventoryUI {
           if (item.type === 'consumable') {
             player.usePotion();
             this.open(player);
+          } else if (item.type === 'weapon') {
+            // Check for first available empty unlocked weapon slot
+            const unlockedSlots = CUMULATIVE_WEAPON_SLOTS.filter(s => player.isWeaponSlotUnlocked(s));
+            const emptySlot = unlockedSlots.find(s => !player.equipment[s]);
+            if (emptySlot) {
+              player.equipment[emptySlot] = item;
+              player.inventory.splice(i, 1);
+            } else {
+              // All unlocked weapon slots are occupied: swap with the primary weapon slot (mainHand)
+              const targetSlot = unlockedSlots[0] || 'mainHand';
+              const oldWpn = player.equipment[targetSlot];
+              player.equipment[targetSlot] = item;
+              player.inventory.splice(i, 1);
+              if (oldWpn) {
+                player.inventory.push(oldWpn);
+              }
+            }
+            player.recalculateDerivedStats();
+            soundEngine.playRuneClick();
+            this.selectedComparisonItem = null;
+            this.onPlayerUpdate();
+            this.open(player);
           } else if (item.slot) {
             // Swap gear
             const current = player.equipment[item.slot];
@@ -388,7 +588,7 @@ export class InventoryUI {
   // STAT & COMPARISON COMPUTATION ENGINE
   // =========================================================================
   public computeComparison(candidate: Item, equipped: Item | null): ComparisonResult {
-    const slotName = candidate.slot ? this.getSlotDisplayName(candidate.slot) : candidate.type.toUpperCase();
+    const slotName = candidate.type === 'weapon' ? 'WEAPON ARSENAL' : (candidate.slot ? this.getSlotDisplayName(candidate.slot) : candidate.type.toUpperCase());
     const statDiffs: StatDiff[] = [];
 
     let score = 0;
@@ -593,7 +793,9 @@ export class InventoryUI {
     let verdictClass: 'verdict-upgrade' | 'verdict-downgrade' | 'verdict-sidegrade' = 'verdict-upgrade';
 
     if (!equipped) {
-      verdictText = '✨ EMPTY SLOT // NEW COMBAT BENEFIT';
+      verdictText = (candidate.type === 'weapon' || candidate.slot === 'mainHand' || candidate.slot?.startsWith('weapon'))
+        ? '✨ EMPTY ARSENAL SLOT // ADDS CONCURRENT FIRING'
+        : '✨ EMPTY SLOT // NEW COMBAT BENEFIT';
       verdictClass = 'verdict-upgrade';
     } else if (score > 4) {
       verdictText = '▲ DIRECT STAT UPGRADE';
@@ -627,7 +829,7 @@ export class InventoryUI {
     const container = this.modalEl.querySelector('#inventory-comparison-panel-container') as HTMLElement;
     if (!container) return;
 
-    if (!candidateItem || !candidateItem.slot) {
+    if (!candidateItem || (!candidateItem.slot && candidateItem.type !== 'weapon')) {
       container.innerHTML = `
         <div class="inventory-comparison-panel" style="min-height:230px; height:230px; box-sizing:border-box; display:flex; flex-direction:column; justify-content:space-between; margin-top:0;">
           <div class="inv-comp-header">
@@ -643,7 +845,20 @@ export class InventoryUI {
       return;
     }
 
-    const equipped = player.equipment[candidateItem.slot] || null;
+    const isWeapon = candidateItem.type === 'weapon' || candidateItem.slot === 'mainHand' || candidateItem.slot?.startsWith('weapon');
+    let equipped: Item | null = null;
+    if (isWeapon) {
+      const unlockedSlots = CUMULATIVE_WEAPON_SLOTS.filter(s => player.isWeaponSlotUnlocked(s));
+      const emptySlot = unlockedSlots.find(s => !player.equipment[s]);
+      if (emptySlot) {
+        equipped = null;
+      } else {
+        const targetSlot = unlockedSlots[0] || 'mainHand';
+        equipped = player.equipment[targetSlot] || player.baseWeapon || null;
+      }
+    } else if (candidateItem.slot) {
+      equipped = player.equipment[candidateItem.slot] || null;
+    }
     const comp = this.computeComparison(candidateItem, equipped);
 
     let rowsHtml = '';
@@ -748,7 +963,30 @@ export class InventoryUI {
 
     // Bind Quick-Equip Button in Comparison Matrix
     document.getElementById('btn-comp-equip-now')?.addEventListener('click', () => {
-      if (candidateIndex !== undefined && candidateItem.slot) {
+      if (candidateIndex === undefined) return;
+      if (candidateItem.type === 'weapon') {
+        const unlockedSlots = CUMULATIVE_WEAPON_SLOTS.filter(s => player.isWeaponSlotUnlocked(s));
+        const emptySlot = unlockedSlots.find(s => !player.equipment[s]);
+        if (emptySlot) {
+          player.equipment[emptySlot] = candidateItem;
+          player.inventory.splice(candidateIndex, 1);
+        } else {
+          const targetSlot = unlockedSlots[0] || 'mainHand';
+          const oldWpn = player.equipment[targetSlot];
+          player.equipment[targetSlot] = candidateItem;
+          player.inventory.splice(candidateIndex, 1);
+          if (oldWpn) {
+            player.inventory.push(oldWpn);
+          }
+        }
+        player.recalculateDerivedStats();
+        soundEngine.playRuneClick();
+        this.selectedComparisonItem = null;
+        this.clearHighlight();
+        this.hideTooltip();
+        this.onPlayerUpdate();
+        this.open(player);
+      } else if (candidateItem.slot) {
         const current = player.equipment[candidateItem.slot];
         player.equipment[candidateItem.slot] = candidateItem;
         player.inventory.splice(candidateIndex, 1);
@@ -773,9 +1011,22 @@ export class InventoryUI {
     if (!this.tooltipEl) return;
 
     // Check if we should render Side-by-Side Dual Comparison Tooltip
-    if (isFromBackpack && item.slot && player) {
+    if (isFromBackpack && (item.slot || item.type === 'weapon') && player) {
       this.tooltipEl.classList.add('comparison-mode');
-      const equipped = player.equipment[item.slot] || null;
+      const isWeapon = item.type === 'weapon' || item.slot === 'mainHand' || item.slot?.startsWith('weapon');
+      let equipped: Item | null = null;
+      if (isWeapon) {
+        const unlockedSlots = CUMULATIVE_WEAPON_SLOTS.filter(s => player.isWeaponSlotUnlocked(s));
+        const emptySlot = unlockedSlots.find(s => !player.equipment[s]);
+        if (emptySlot) {
+          equipped = null;
+        } else {
+          const targetSlot = unlockedSlots[0] || 'mainHand';
+          equipped = player.equipment[targetSlot] || player.baseWeapon || null;
+        }
+      } else if (item.slot) {
+        equipped = player.equipment[item.slot] || null;
+      }
       const comp = this.computeComparison(item, equipped);
 
       let candidateStats = '';
@@ -869,14 +1120,14 @@ export class InventoryUI {
             ${item.affixes && item.affixes.length > 0 ? `<div class="tooltip-affixes" style="font-size:11px;">${item.affixes.map(a => `<div>• ${a}</div>`).join('')}</div>` : ''}
             ${item.sockets && item.sockets.length > 0 ? `<div style="font-family:var(--font-mono); font-size:10px; color:var(--gold-runic);">Sockets: ${item.sockets.map(s => s.filled ? '[●]' : '[○]').join(' ')}</div>` : ''}
             <div style="margin-top:auto; padding-top:6px; border-top:1px solid var(--border-dim); font-family:var(--font-mono); font-size:10px; color:var(--cyan-core);">
-              [L-Click to Equip Now]
+              ${isWeapon ? (!equipped ? '[L-Click to Add to Simultaneous Arsenal]' : '[L-Click to Swap Primary Weapon]') : '[L-Click to Equip Now]'}
             </div>
           </div>
 
           <!-- Right: Equipped Tooltip Card -->
           <div class="tooltip-card equipped-card">
             <div class="tooltip-card-header">
-              <span class="tooltip-badge equipped-badge">🛡️ EQUIPPED</span>
+              <span class="tooltip-badge equipped-badge">${isWeapon && !equipped ? '⚔️ ARSENAL' : '🛡️ EQUIPPED'}</span>
               ${equipped ? `<span style="font-family:var(--font-mono); font-size:10px; color:var(--gold-runic);">LVL ${equipped.level}</span>` : ''}
             </div>
             ${equipped ? `
@@ -892,9 +1143,9 @@ export class InventoryUI {
               </div>
             ` : `
               <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; height:120px; color:var(--text-muted); font-family:var(--font-mono); font-size:11px; text-align:center;">
-                <span style="font-size:24px; margin-bottom:4px;">⭕</span>
-                <span>NO ITEM EQUIPPED</span>
-                <span style="color:var(--cyan-core); margin-top:4px;">Direct raw boost!</span>
+                <span style="font-size:24px; margin-bottom:4px;">✨</span>
+                <span>EMPTY ${isWeapon ? 'ARSENAL' : 'EQUIPMENT'} SLOT</span>
+                <span style="color:var(--cyan-core); margin-top:4px;">${isWeapon ? 'Fires simultaneously alongside all weapons!' : 'Direct raw boost!'}</span>
               </div>
             `}
           </div>
@@ -943,12 +1194,28 @@ export class InventoryUI {
       socketsHtml = `<div style="font-family:var(--font-mono); font-size:11px; color:var(--gold-runic); margin-bottom:6px;">Sockets: ${item.sockets.map(s => s.filled ? '[● Infused]' : '[○ Empty]').join(' ')}</div>`;
     }
 
-    const slotDisplay = item.slot ? this.getSlotDisplayName(item.slot) : item.type.toUpperCase();
-    const fitSlotBadge = item.slot
-      ? `<div style="margin-top:4px; font-family:var(--font-mono); font-size:10px; color:var(--cyan-core); display:flex; align-items:center; gap:4px; background:rgba(56,189,248,0.12); padding:2px 6px; border-radius:3px; border:1px solid rgba(56,189,248,0.25);">
-          <span>🎯 Slot:</span> <strong style="color:#7dd3fc; letter-spacing:0.5px;">${this.getSlotDisplayName(item.slot)}</strong>
+    const isBaseWeapon = player?.baseWeapon && (player.baseWeapon.id === item.id || player.baseWeapon.name === item.name);
+    const slotDisplay = isBaseWeapon
+      ? '⭐ INNATE ARSENAL WEAPON'
+      : (item.slot ? this.getSlotDisplayName(item.slot) : item.type.toUpperCase());
+    const fitSlotBadge = isBaseWeapon
+      ? `<div style="margin-top:4px; font-family:var(--font-mono); font-size:10px; color:#f59e0b; display:flex; align-items:center; gap:4px; background:rgba(245,158,11,0.15); padding:2px 6px; border-radius:3px; border:1px solid rgba(245,158,11,0.35);">
+          <span>⭐ INNATE ARCHETYPE WEAPON:</span> <strong style="color:#fbbf24; letter-spacing:0.5px;">PERMANENT ARSENAL CORE</strong>
         </div>`
-      : '';
+      : (item.slot
+        ? `<div style="margin-top:4px; font-family:var(--font-mono); font-size:10px; color:var(--cyan-core); display:flex; align-items:center; gap:4px; background:rgba(56,189,248,0.12); padding:2px 6px; border-radius:3px; border:1px solid rgba(56,189,248,0.25);">
+            <span>🎯 Slot:</span> <strong style="color:#7dd3fc; letter-spacing:0.5px;">${this.getSlotDisplayName(item.slot)}</strong>
+          </div>`
+        : '');
+
+    const footerHtml = isBaseWeapon
+      ? `<div style="margin-top:6px; font-family:var(--font-mono); font-size:10px; color:#f59e0b; text-align:center;">
+          🔒 PERMANENT ARCHETYPE CORE (ALWAYS ACTIVE & SIMULTANEOUSLY FIRED)
+        </div>`
+      : `<div style="margin-top:6px; font-family:var(--font-mono); font-size:10.5px; color:var(--gold-runic); display:flex; justify-content:space-between; align-items:center;">
+          <span>♻️ Salvage: +${item.naniteValue || 20} Scrap</span>
+          <span style="color:#94a3b8; font-size:9.5px;">[R-Click / Shift-Click]</span>
+        </div>`;
 
     this.tooltipEl.innerHTML = `
       <div class="tooltip-name" style="color:var(--rarity-${item.rarity});">${this.getItemEmoji(item)} ${item.name}</div>
@@ -958,10 +1225,7 @@ export class InventoryUI {
       ${affixesHtml}
       ${socketsHtml}
       <div class="tooltip-desc">${item.description}</div>
-      <div style="margin-top:6px; font-family:var(--font-mono); font-size:10.5px; color:var(--gold-runic); display:flex; justify-content:space-between; align-items:center;">
-        <span>♻️ Salvage: +${item.naniteValue || 20} Scrap</span>
-        <span style="color:#94a3b8; font-size:9.5px;">[R-Click / Shift-Click]</span>
-      </div>
+      ${footerHtml}
     `;
 
     this.tooltipEl.style.display = 'block';
@@ -1111,7 +1375,7 @@ export class InventoryUI {
       return '💎';
     }
 
-    if (item.slot === 'mainHand') {
+    if (item.type === 'weapon' || item.slot === 'mainHand' || item.slot?.startsWith('weapon')) {
       if (n.includes('katana') || n.includes('saber')) return '🗡️';
       if (n.includes('dagger')) return '🔪';
       if (n.includes('scythe')) return '🪓';
@@ -1120,7 +1384,7 @@ export class InventoryUI {
       if (n.includes('rifle') || n.includes('cannon') || n.includes('blaster')) return '🔫';
       if (n.includes('mortar')) return '💣';
       if (n.includes('staff') || n.includes('scepter') || n.includes('spire')) return '🪄';
-      if (n.includes('harp') || n.includes('kantele')) return '🪕';
+      if (n.includes('harp') || n.includes('kantele') || n.includes('resonator')) return '🪕';
       if (n.includes('axe')) return '🪓';
       if (n.includes('halberd')) return '⛏️';
       if (item.damageType === 'fire') return '🔨';

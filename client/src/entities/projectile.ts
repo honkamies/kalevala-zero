@@ -41,7 +41,7 @@ export interface Projectile {
   homing: boolean;
   damageFalloff?: boolean;
   sourceName?: string;
-  trail: { x: number; y: number }[];
+  trail?: { x: number; y: number }[];
   hitEntityIds?: Set<string>;
   shieldDamageBonus?: number;
   areaRadius?: number;
@@ -49,6 +49,17 @@ export interface Projectile {
 
 export class ProjectileManager {
   public projectiles: Projectile[] = [];
+  private pool: Projectile[] = [];
+  private nextId = 0;
+
+  recycle(p: Projectile) {
+    if (this.pool.length < 250) {
+      if (p.hitEntityIds) {
+        p.hitEntityIds.clear();
+      }
+      this.pool.push(p);
+    }
+  }
 
   spawn(
     x: number,
@@ -87,36 +98,74 @@ export class ProjectileManager {
     const baseLife = isShieldWave ? 0.55 : (isMega ? 3.2 : (style === 'void_skull' ? 3.5 : (style === 'homing_missile' ? 3.0 : (isRail ? 1.6 : (isScatter ? 0.55 : 2.5)))));
     const life = baseLife * Math.max(0.5, lifeMultiplier);
     const actualPierce = isShieldWave ? 99 : (isMega ? 99 : (isRail ? 3 : (style === 'scrap_buzzsaw' ? 2 : pierceCount)));
+    const spinSpeed = style === 'scrap_buzzsaw' ? 18 : (isMega ? 6 : (style === 'frost_shard' ? 4 : 8));
+    const shouldFalloff = isShieldWave || isScatter || damageFalloff;
 
-    this.projectiles.push({
-      id: Math.random().toString(),
-      x,
-      y,
-      startX: x,
-      startY: y,
-      vx,
-      vy,
-      speed,
-      damage,
-      damageType,
-      radius,
-      color,
-      glowColor: color,
-      fromPlayer,
-      life,
-      maxLife: life,
-      pierceCount: actualPierce,
-      style,
-      spinAngle: Math.random() * Math.PI * 2,
-      spinSpeed: style === 'scrap_buzzsaw' ? 18 : (isMega ? 6 : (style === 'frost_shard' ? 4 : 8)),
-      homing,
-      damageFalloff: isShieldWave || isScatter || damageFalloff,
-      sourceName,
-      trail: [],
-      hitEntityIds: new Set<string>(),
-      shieldDamageBonus,
-      areaRadius
-    });
+    let p: Projectile;
+    if (this.pool.length > 0) {
+      p = this.pool.pop()!;
+      p.id = String(++this.nextId);
+      p.x = x;
+      p.y = y;
+      p.startX = x;
+      p.startY = y;
+      p.vx = vx;
+      p.vy = vy;
+      p.speed = speed;
+      p.damage = damage;
+      p.damageType = damageType;
+      p.radius = radius;
+      p.color = color;
+      p.glowColor = color;
+      p.fromPlayer = fromPlayer;
+      p.life = life;
+      p.maxLife = life;
+      p.pierceCount = actualPierce;
+      p.style = style;
+      p.spinAngle = Math.random() * Math.PI * 2;
+      p.spinSpeed = spinSpeed;
+      p.homing = homing;
+      p.damageFalloff = shouldFalloff;
+      p.sourceName = sourceName;
+      if (!p.hitEntityIds) {
+        p.hitEntityIds = new Set<string>();
+      } else {
+        p.hitEntityIds.clear();
+      }
+      p.shieldDamageBonus = shieldDamageBonus;
+      p.areaRadius = areaRadius;
+    } else {
+      p = {
+        id: String(++this.nextId),
+        x,
+        y,
+        startX: x,
+        startY: y,
+        vx,
+        vy,
+        speed,
+        damage,
+        damageType,
+        radius,
+        color,
+        glowColor: color,
+        fromPlayer,
+        life,
+        maxLife: life,
+        pierceCount: actualPierce,
+        style,
+        spinAngle: Math.random() * Math.PI * 2,
+        spinSpeed,
+        homing,
+        damageFalloff: shouldFalloff,
+        sourceName,
+        hitEntityIds: new Set<string>(),
+        shieldDamageBonus,
+        areaRadius
+      };
+    }
+
+    this.projectiles.push(p);
   }
 
   update(
@@ -129,10 +178,6 @@ export class ProjectileManager {
     for (let i = this.projectiles.length - 1; i >= 0; i--) {
       const p = this.projectiles[i];
 
-      // Save trail point
-      p.trail.push({ x: p.x, y: p.y });
-      if (p.trail.length > 8) p.trail.splice(0, p.trail.length - 8);
-
       // Spin rotation
       p.spinAngle += p.spinSpeed * dt;
 
@@ -140,14 +185,15 @@ export class ProjectileManager {
       if (p.homing && !p.fromPlayer && playerPos) {
         const hdx = playerPos.x - p.x;
         const hdy = playerPos.y - p.y;
-        const hdist = Math.sqrt(hdx * hdx + hdy * hdy);
-        if (hdist > 0.1) {
+        const hdistSq = hdx * hdx + hdy * hdy;
+        if (hdistSq > 0.01) {
+          const hdist = Math.sqrt(hdistSq);
           const steerRate = 4.8 * dt;
           p.vx += (hdx / hdist) * p.speed * steerRate;
           p.vy += (hdy / hdist) * p.speed * steerRate;
 
           // Re-normalize velocity
-          const currentSpeed = Math.sqrt(p.vx * p.vx + p.vy * p.vy);
+          const currentSpeed = Math.hypot(p.vx, p.vy);
           if (currentSpeed > 0) {
             p.vx = (p.vx / currentSpeed) * p.speed;
             p.vy = (p.vy / currentSpeed) * p.speed;
@@ -158,22 +204,23 @@ export class ProjectileManager {
       // Homing behavior for Player Missiles/Darts towards Visible Enemies in Forward Sight
       if (p.homing && p.fromPlayer && enemyTargets && enemyTargets.length > 0) {
         let closest: { x: number; y: number } | null = null;
-        let minDist = 10.5; // Max acquisition range for visible targets
+        let minDistSq = 110.25; // 10.5 * 10.5 max acquisition range
         const projMoveAngle = Math.atan2(p.vy, p.vx);
 
-        for (const target of enemyTargets) {
+        for (let t = 0; t < enemyTargets.length; t++) {
+          const target = enemyTargets[t];
           const tdx = target.x - p.x;
           const tdy = target.y - p.y;
-          const dist = Math.sqrt(tdx * tdx + tdy * tdy);
+          const distSq = tdx * tdx + tdy * tdy;
 
-          if (dist < minDist) {
+          if (distSq < minDistSq) {
             // Only acquire targets in the forward flight cone (+/- 75 degrees of flight trajectory)
             const targetAngle = Math.atan2(tdy, tdx);
             let angleDiff = Math.abs(targetAngle - projMoveAngle);
             while (angleDiff > Math.PI) angleDiff = Math.PI * 2 - angleDiff;
 
             if (angleDiff <= Math.PI * 0.42) {
-              minDist = dist;
+              minDistSq = distSq;
               closest = target;
             }
           }
@@ -229,6 +276,7 @@ export class ProjectileManager {
           particleSystem.emitSparks(p.x, p.y, 0.3, '#facc15', 6);
         }
         if (onHitWall) onHitWall(p);
+        this.recycle(p);
         this.projectiles[i] = this.projectiles[this.projectiles.length - 1];
         this.projectiles.pop();
         continue;
@@ -242,6 +290,7 @@ export class ProjectileManager {
           particleSystem.emitShockwave(p.x, p.y, 1.2, '#f97316');
           particleSystem.emitSparks(p.x, p.y, 0.2, '#f97316', 6);
         }
+        this.recycle(p);
         this.projectiles[i] = this.projectiles[this.projectiles.length - 1];
         this.projectiles.pop();
       }
@@ -249,12 +298,16 @@ export class ProjectileManager {
   }
 
   clear() {
+    for (let i = 0; i < this.projectiles.length; i++) {
+      this.recycle(this.projectiles[i]);
+    }
     this.projectiles.length = 0;
   }
 
   remove(id: string) {
     const idx = this.projectiles.findIndex(p => p.id === id);
     if (idx !== -1) {
+      this.recycle(this.projectiles[idx]);
       this.projectiles[idx] = this.projectiles[this.projectiles.length - 1];
       this.projectiles.pop();
     }

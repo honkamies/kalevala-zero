@@ -117,6 +117,7 @@ export class SampoGame {
   public omegaBossIndex: number = 0;
   public gateDisplacementCooldown: number = 0;
   public voidMistAuraTimer: number = 0;
+  public escapeGlitchTimer: number = 0;
 
   public readonly OMEGA_BOSS_DEFINITIONS = [
     {
@@ -691,16 +692,28 @@ export class SampoGame {
     });
 
     // Camera Zoom Controls (Wheel & Keys)
+    const adjustZoom = (delta: number) => {
+      if (this.platformerMode && this.platformerMode.isActive) {
+        this.platformerMode.camera.changeZoom(delta);
+      } else {
+        this.camera.changeZoom(delta);
+      }
+    };
+
     inputManager.onWheel((delta) => {
-      this.camera.changeZoom(delta);
+      if (this.platformerMode && this.platformerMode.isActive) {
+        // Disabled mouse scroll zoom in platformer mode per user request
+        return;
+      }
+      adjustZoom(delta);
     });
 
-    inputManager.onAction('=', () => this.camera.changeZoom(0.15));
-    inputManager.onAction('+', () => this.camera.changeZoom(0.15));
-    inputManager.onAction(']', () => this.camera.changeZoom(0.15));
-    inputManager.onAction('-', () => this.camera.changeZoom(-0.15));
-    inputManager.onAction('_', () => this.camera.changeZoom(-0.15));
-    inputManager.onAction('[', () => this.camera.changeZoom(-0.15));
+    inputManager.onAction('=', () => adjustZoom(0.15));
+    inputManager.onAction('+', () => adjustZoom(0.15));
+    inputManager.onAction(']', () => adjustZoom(0.15));
+    inputManager.onAction('-', () => adjustZoom(-0.15));
+    inputManager.onAction('_', () => adjustZoom(-0.15));
+    inputManager.onAction('[', () => adjustZoom(-0.15));
 
     // HUD button bindings
     document.getElementById('btn-pause-menu')?.addEventListener('click', () => {
@@ -721,10 +734,10 @@ export class SampoGame {
       if (this.player && !this.pauseMenuUI.isOpen()) this.shopCraftUI.toggle(this.player);
     });
     document.getElementById('btn-zoom-in')?.addEventListener('click', () => {
-      this.camera.changeZoom(0.2);
+      adjustZoom(0.2);
     });
     document.getElementById('btn-zoom-out')?.addEventListener('click', () => {
-      this.camera.changeZoom(-0.2);
+      adjustZoom(-0.2);
     });
     const muteBtn = document.getElementById('btn-toggle-mute');
     if (muteBtn) {
@@ -823,6 +836,9 @@ export class SampoGame {
       ? themeId
       : 'tuonela_chasm') as 'tuonela_chasm' | 'vainola_canopy' | 'pohjola_vault' | 'alinen_trench';
 
+    // Synchronize canvas dimensions and camera viewport for platformer mode
+    this.renderer.resize();
+    this.platformerMode.camera.handleResize(this.canvas.width, this.canvas.height);
     this.platformerMode.start(this.player, validTheme);
   }
 
@@ -1094,7 +1110,6 @@ export class SampoGame {
           { armor: e.armor, shield: 0 }
         );
 
-        combatEngine.addFloatingText(e.x, e.y, `${res.finalDamage} ⚡`, 'shock');
         const died = e.takeDamage(res.finalDamage, 'shock');
         if (died) this.handleEnemyDeath(e);
       }
@@ -1106,7 +1121,6 @@ export class SampoGame {
       const dy = gw.y - this.player!.y;
       if (Math.sqrt(dx * dx + dy * dy) <= 4.5) {
         const destroyed = gw.takeDamage(55 + this.player!.level * 10);
-        combatEngine.addFloatingText(gw.x, gw.y, `${55 + this.player!.level * 10} ⚡`, 'shock');
         if (destroyed) this.handleGatewayDestruction(gw);
       }
     });
@@ -1147,7 +1161,6 @@ export class SampoGame {
     const xpGained = Math.round(baseXP * xpMult);
     const prevLevel = this.player.level;
     this.player.gainXP(xpGained);
-    combatEngine.addFloatingText(e.x, e.y, `+${xpGained} XP`, 'heal');
 
     if (this.player.level > prevLevel) {
       this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+3 Stat Points)`, 'level');
@@ -1172,7 +1185,6 @@ export class SampoGame {
       const wispCount = 3;
       soundEngine.playExplosion();
       particleSystem.emitShockwave(e.x, e.y, 3.5, '#ea580c');
-      combatEngine.addFloatingText(e.x, e.y - 0.8, '🔥 BROOD HATCHING! 🔥', 'crit');
       this.camera.addShake(0.8, 0.08);
 
       for (let w = 0; w < wispCount; w++) {
@@ -1217,7 +1229,6 @@ export class SampoGame {
         particleSystem.emitRunicGlyph(e.x, e.y, '#38bdf8');
       }
 
-      combatEngine.addFloatingText(e.x, e.y, `✨ MAGIC SYMBOL: [${shard.glyph}] ${shard.name} (Pos ${posRoman})`, 'crit');
       this.hud.addLog(`🔮 CIPHER SHARD RECOVERED: [Pos ${posRoman}] = ${shard.glyph} (${shard.name})! [${collectedCount}/4 Decrypted]`, 'rune');
 
       if (primaryPuzzle && primaryPuzzle.isAllShardsCollected()) {
@@ -1271,7 +1282,6 @@ export class SampoGame {
           soundEngine.playSyntysanatAnvil();
           this.camera.addShake(3.0, 0.25);
           particleSystem.emitShockwave(e.x, e.y, 12.0, '#c084fc');
-          combatEngine.addFloatingText(e.x, e.y, '★ METAMORPHOSIS // SOUL TRANSCENDENCE ★', 'crit');
           this.spawnOmegaBoss(this.omegaBossIndex);
           return;
         } else {
@@ -1289,7 +1299,6 @@ export class SampoGame {
             particleSystem.emitPixelGlitch(e.x + (Math.random() - 0.5) * 16, e.y + (Math.random() - 0.5) * 16, '#fde047');
           }
 
-          combatEngine.addFloatingText(e.x, e.y, '🏆 VOID SINGULARITY VANQUISHED! 🏆', 'crit');
           this.hud.addLog(`👑 SUPREME CONQUEST: You have vanquished Surma-Musta and reconstructed the Eternal Cosmic Sampo!`, 'level');
 
           // Drop Supreme Mythic Relic
@@ -1361,7 +1370,6 @@ export class SampoGame {
     if (this.player.inventory.length < 30) {
       this.player.inventory.push(item);
       soundEngine.playLootDrop(item.rarity === 'masterwork' || item.rarity === 'relic');
-      combatEngine.addFloatingText(sourceX, sourceY, `+${item.name}`, 'crit');
       this.hud.addLog(`Acquired: ${item.name} [${item.rarity.toUpperCase()}]`, 'loot');
     } else {
       // Auto-Salvage Recycling Overflow
@@ -1371,7 +1379,6 @@ export class SampoGame {
       }
       this.player.naniteScrap += scrapValue;
       soundEngine.playScrapPickup();
-      combatEngine.addFloatingText(sourceX, sourceY, `+${scrapValue} Scrap (Recycled)`, 'heal');
       this.hud.addLog(`🎒 Backpack Full: ${item.name} auto-recycled into +${scrapValue} Nanite Scrap!`, 'loot');
     }
   }
@@ -1919,10 +1926,9 @@ export class SampoGame {
 
     // Phase 1: Fatal Hit-Stop & Time Freeze Sound (cuts through pure silence)
     soundEngine.playHeroDeathHitStop();
-    this.camera.targetZoom = 1.75;
-    this.camera.addShake(2.2, 0.18);
-    combatEngine.addFloatingText(this.player.x, this.player.y, '⚠️ CRITICAL BREACH!', 'crit');
-    this.hud.addLog(`💀 CRITICAL HIT: ${this.player.name.toUpperCase()} vessel breached by ${resolvedFatal.killerName} (-${resolvedFatal.amount} HP [${String(resolvedFatal.damageType).toUpperCase()}])!`, 'alert');
+    this.camera.targetZoom = 0.85;
+    this.camera.addShake(1.5, 0.15);
+    this.hud.addLog(`💀 VESSEL DESTROYED: Breached by ${resolvedFatal.killerName} (-${resolvedFatal.amount} HP [${String(resolvedFatal.damageType).toUpperCase()}])!`, 'alert');
   }
 
   private showDefeatModal() {
@@ -1937,8 +1943,8 @@ export class SampoGame {
     this.defeatModalEl.style.cssText = `
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(8, 2, 4, 0.94);
-      backdrop-filter: blur(8px);
+      background: rgba(6, 2, 4, 0.72);
+      backdrop-filter: blur(4px);
       z-index: 10000;
       display: flex;
       justify-content: center;
@@ -1967,96 +1973,83 @@ export class SampoGame {
 
     this.defeatModalEl.innerHTML = `
       <div style="
-        background: linear-gradient(180deg, rgba(26, 8, 12, 0.98) 0%, rgba(15, 3, 5, 0.98) 100%);
-        border: 2px solid #ef4444;
-        border-radius: 12px;
-        box-shadow: 0 0 60px rgba(239, 68, 68, 0.6);
-        max-width: 620px;
-        width: 92%;
-        padding: 34px 30px;
+        background: linear-gradient(180deg, rgba(22, 6, 10, 0.97) 0%, rgba(12, 3, 5, 0.98) 100%);
+        border: 1.5px solid rgba(239, 68, 68, 0.7);
+        border-radius: 10px;
+        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(239, 68, 68, 0.35);
+        max-width: 380px;
+        width: 90%;
+        padding: 20px 22px;
         text-align: center;
         position: relative;
-        animation: fadeIn 0.4s ease-out;
+        animation: fadeIn 0.3s ease-out;
         pointer-events: auto;
       ">
         <!-- Close [X] Button -->
         <button id="btn-defeat-close-x" title="Close Window (ESC)" style="
           position: absolute;
-          top: 14px;
-          right: 18px;
+          top: 10px;
+          right: 14px;
           background: none;
           border: none;
-          color: #fca5a5;
-          font-size: 26px;
+          color: #f87171;
+          font-size: 22px;
           font-weight: 300;
           cursor: pointer;
-          padding: 4px 8px;
+          padding: 2px 6px;
           line-height: 1;
           transition: color 0.15s;
         ">&times;</button>
 
-        <div style="font-size: 13px; font-family: var(--font-mono); letter-spacing: 4px; color: #f87171; margin-bottom: 6px; padding-right: 20px;">
-          ⚠️ SYSTEM CRITICAL // VESSEL COLLAPSED
+        <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2.5px; color: #f87171; margin-bottom: 4px;">
+          ⚠️ VESSEL COLLAPSED
         </div>
-        <div style="font-size: 30px; font-weight: 900; letter-spacing: 3px; color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.8); margin-bottom: 14px;">
-          ${this.player ? this.player.name.toUpperCase() : 'OPERATIVE'} DESTROYED
+        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); margin-bottom: 12px;">
+          ${this.player ? this.player.name.toUpperCase() : 'OPERATIVE'} FALLEN
         </div>
 
-        <!-- WHAT HAPPENED: Combat Autopsy Card -->
+        <!-- Combat Autopsy Line -->
         <div style="
-          background: rgba(239, 68, 68, 0.12);
-          border: 1px solid rgba(239, 68, 68, 0.45);
-          border-radius: 10px;
-          padding: 14px 18px;
-          margin-bottom: 20px;
+          background: rgba(239, 68, 68, 0.1);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 6px;
+          padding: 10px 14px;
+          margin-bottom: 12px;
           text-align: left;
-          display: flex;
-          align-items: center;
-          gap: 16px;
-          box-shadow: inset 0 0 20px rgba(239, 68, 68, 0.12);
+          font-size: 13px;
         ">
-          <div style="font-size: 36px; line-height: 1; filter: drop-shadow(0 0 8px #ef4444);">💀</div>
-          <div style="flex: 1;">
-            <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2px; color: #f87171; font-weight: 700; margin-bottom: 4px;">
-              ⚡ COMBAT AUTOPSY // FATAL EVENT
-            </div>
-            <div style="font-size: 17px; font-weight: 800; color: #ffffff; letter-spacing: 1px;">
-              Terminated by <span style="color: #fca5a5; text-shadow: 0 0 10px rgba(239,68,68,0.6);">${fatal.killerName.toUpperCase()}</span>
-            </div>
-            <div style="font-size: 13px; color: #94a3b8; font-family: var(--font-mono); margin-top: 3px;">
-              Fatal Impact: <strong style="color: #ffffff;">${fatal.amount}</strong> <span style="color: ${typeColor}; font-weight: 700;">[${dmgTypeStr} DAMAGE]</span> &bull; Sector: <span style="color: #cbd5e1;">${currentBiome.name}</span>
-            </div>
+          <div style="color: #f1f5f9; font-weight: 700;">
+            Slain by <span style="color: #fca5a5;">${fatal.killerName}</span>
+          </div>
+          <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8; margin-top: 3px;">
+            Fatal Hit: <strong style="color: #ffffff;">-${fatal.amount}</strong> <span style="color: ${typeColor}; font-weight: 700;">[${dmgTypeStr}]</span> &bull; ${currentBiome.name}
           </div>
         </div>
 
-        <div style="font-size: 14px; color: #cbd5e1; line-height: 1.5; margin-bottom: 20px;">
-          Your cybernetic vessel was annihilated by hostile forces in <strong>${currentBiome.name}</strong>. Consciousness disengaged from the Sampo matrix.
+        <!-- Compact Stats Bar -->
+        <div style="
+          display: flex;
+          justify-content: space-around;
+          background: rgba(0, 0, 0, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 6px;
+          padding: 8px 10px;
+          margin-bottom: 16px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+        ">
+          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 13px;">${this.player ? this.player.level : 1}</strong></div>
+          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 13px;">${this.kills}</strong></div>
+          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 13px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
         </div>
 
-        <div style="background: rgba(0,0,0,0.5); border: 1px solid rgba(239,68,68,0.3); border-radius: 8px; padding: 16px; margin-bottom: 24px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
-          <div>
-            <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8;">LEVEL</div>
-            <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${this.player ? this.player.level : 1}</div>
-          </div>
-          <div>
-            <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8;">HOSTILES SLAIN</div>
-            <div style="font-size: 20px; font-weight: 700; color: #ef4444;">${this.kills}</div>
-          </div>
-          <div>
-            <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8;">NANITE SCRAP</div>
-            <div style="font-size: 20px; font-weight: 700; color: #38bdf8;">${this.player ? this.player.naniteScrap : 0}</div>
-          </div>
-        </div>
-
-        <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-          <button id="btn-defeat-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); padding: 12px 24px; font-size: 14px; cursor: pointer; pointer-events: auto;">
-            🔄 RE-INITIALIZE EXPEDITION
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button id="btn-defeat-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+            🔄 RETRY
           </button>
-          <button id="btn-defeat-menu" class="sampo-btn" style="padding: 12px 24px; font-size: 14px; cursor: pointer; pointer-events: auto;">
+          <button id="btn-defeat-menu" class="sampo-btn" style="padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
             🚀 SAGA COMMAND
-          </button>
-          <button id="btn-defeat-close" class="sampo-btn" style="padding: 12px 20px; font-size: 14px; border-color:#64748b; color:#cbd5e1; cursor: pointer; pointer-events: auto;">
-            ✖ CLOSE
           </button>
         </div>
       </div>
@@ -2099,7 +2092,6 @@ export class SampoGame {
     });
 
     document.getElementById('btn-defeat-menu')?.addEventListener('click', handleReturnToMenu);
-    document.getElementById('btn-defeat-close')?.addEventListener('click', handleReturnToMenu);
     document.getElementById('btn-defeat-close-x')?.addEventListener('click', handleReturnToMenu);
   }
 
@@ -2112,6 +2104,7 @@ export class SampoGame {
       this.defeatModalEl.remove();
       this.defeatModalEl = null;
     }
+    this.camera.targetZoom = 0.85;
   }
 
   // Post-Boss Realm Collapse Evacuation Failure Modal
@@ -2127,8 +2120,8 @@ export class SampoGame {
     this.collapseModalEl.style.cssText = `
       position: fixed;
       top: 0; left: 0; width: 100vw; height: 100vh;
-      background: rgba(8, 2, 4, 0.94);
-      backdrop-filter: blur(10px);
+      background: rgba(6, 2, 4, 0.72);
+      backdrop-filter: blur(4px);
       z-index: 10000;
       display: flex;
       justify-content: center;
@@ -2142,68 +2135,68 @@ export class SampoGame {
 
     this.collapseModalEl.innerHTML = `
       <div style="
-        background: linear-gradient(180deg, rgba(30, 10, 14, 0.98) 0%, rgba(15, 3, 5, 0.98) 100%);
-        border: 2px solid #ef4444;
-        border-radius: 12px;
-        box-shadow: 0 0 60px rgba(239, 68, 68, 0.7);
-        max-width: 600px;
+        background: linear-gradient(180deg, rgba(24, 8, 12, 0.97) 0%, rgba(12, 3, 5, 0.98) 100%);
+        border: 1.5px solid rgba(239, 68, 68, 0.7);
+        border-radius: 10px;
+        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(239, 68, 68, 0.35);
+        max-width: 380px;
         width: 90%;
-        padding: 36px 32px;
+        padding: 20px 22px;
         text-align: center;
         position: relative;
-        animation: fadeIn 0.4s ease-out;
+        animation: fadeIn 0.3s ease-out;
         pointer-events: auto;
       ">
         <!-- Close [X] Button -->
         <button id="btn-collapse-close-x" title="Close Window (ESC)" style="
           position: absolute;
-          top: 14px;
-          right: 18px;
+          top: 10px;
+          right: 14px;
           background: none;
           border: none;
-          color: #fca5a5;
-          font-size: 26px;
+          color: #f87171;
+          font-size: 22px;
           font-weight: 300;
           cursor: pointer;
-          padding: 4px 8px;
+          padding: 2px 6px;
           line-height: 1;
           transition: color 0.15s;
         ">&times;</button>
 
-        <div style="font-size: 13px; font-family: var(--font-mono); letter-spacing: 4px; color: #f87171; margin-bottom: 6px; padding-right: 20px;">
-          ⚠️ SINGULARITY IMPLOSION // EXTRACTION TIMEOUT
+        <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2.5px; color: #f87171; margin-bottom: 4px;">
+          ⚠️ TIME EXPIRED
         </div>
-        <div style="font-size: 30px; font-weight: 900; letter-spacing: 2px; color: #ef4444; text-shadow: 0 0 20px rgba(239, 68, 68, 0.8); margin-bottom: 12px;">
-          REALM COLLAPSED INTO THE VOID
+        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); margin-bottom: 12px;">
+          REALM COLLAPSED
         </div>
-        <div style="font-size: 15px; color: #cbd5e1; line-height: 1.5; margin-bottom: 24px;">
-          You defeated the guardian of <strong>${currentBiome.name}</strong>, but failed to reach the Extraction Portal in time. The dimensional fabric disintegrated.
-        </div>
-
-        <div style="background: rgba(0,0,0,0.55); border: 1px solid rgba(239,68,68,0.35); border-radius: 8px; padding: 16px; margin-bottom: 26px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; text-align: center;">
-          <div>
-            <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8;">LEVEL</div>
-            <div style="font-size: 20px; font-weight: 700; color: #f59e0b;">${this.player ? this.player.level : 1}</div>
-          </div>
-          <div>
-            <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8;">HOSTILES SLAIN</div>
-            <div style="font-size: 20px; font-weight: 700; color: #ef4444;">${this.kills}</div>
-          </div>
-          <div>
-            <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8;">NANITE SCRAP</div>
-            <div style="font-size: 20px; font-weight: 700; color: #38bdf8;">${this.player ? this.player.naniteScrap : 0}</div>
-          </div>
+        <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4; margin-bottom: 12px;">
+          Extraction portal unreachable in time. Dimensional fabric disintegrated.
         </div>
 
-        <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-          <button id="btn-collapse-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 20px rgba(239, 68, 68, 0.5); padding: 12px 24px; font-size: 14px; cursor: pointer; pointer-events: auto;">
-            🔄 RESTART REALM (BEGINNING)
+        <!-- Compact Stats Bar -->
+        <div style="
+          display: flex;
+          justify-content: space-around;
+          background: rgba(0, 0, 0, 0.45);
+          border: 1px solid rgba(255, 255, 255, 0.08);
+          border-radius: 6px;
+          padding: 8px 10px;
+          margin-bottom: 16px;
+          font-family: var(--font-mono);
+          font-size: 11px;
+        ">
+          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 13px;">${this.player ? this.player.level : 1}</strong></div>
+          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 13px;">${this.kills}</strong></div>
+          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 13px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px; justify-content: center;">
+          <button id="btn-collapse-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+            🔄 RESTART REALM
           </button>
-          <button id="btn-collapse-menu" class="sampo-btn" style="padding: 12px 24px; font-size: 14px; cursor: pointer; pointer-events: auto;">
-            🚀 RETURN TO MAIN MENU
-          </button>
-          <button id="btn-collapse-close" class="sampo-btn" style="padding: 12px 20px; font-size: 14px; border-color:#64748b; color:#cbd5e1; cursor: pointer; pointer-events: auto;">
-            ✖ CLOSE
+          <button id="btn-collapse-menu" class="sampo-btn" style="padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+            🚀 SAGA MENU
           </button>
         </div>
       </div>
@@ -2246,7 +2239,6 @@ export class SampoGame {
     });
 
     document.getElementById('btn-collapse-menu')?.addEventListener('click', handleReturnCollapse);
-    document.getElementById('btn-collapse-close')?.addEventListener('click', handleReturnCollapse);
     document.getElementById('btn-collapse-close-x')?.addEventListener('click', handleReturnCollapse);
   }
 
@@ -2255,6 +2247,7 @@ export class SampoGame {
       this.collapseModalEl.remove();
       this.collapseModalEl = null;
     }
+    this.camera.targetZoom = 0.85;
   }
 
   private showVictoryModal() {
@@ -2371,20 +2364,42 @@ export class SampoGame {
           </div>
         </div>
 
-        <!-- Next Realm Unlocked Status -->
+        <!-- Next Realm Unlocked Status & Iron Covenant -->
         <div style="
-          background: ${nextBiome ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.2)'}; 
-          border: 1px solid ${nextBiome ? '#10b981' : '#f59e0b'}; 
-          border-radius: 6px; 
-          padding: 12px;
+          background: ${this.currentSectorId === 'void_dimension' ? 'linear-gradient(135deg, rgba(88, 28, 135, 0.35) 0%, rgba(15, 23, 42, 0.95) 50%, rgba(245, 158, 11, 0.25) 100%)' : (nextBiome ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.2)')}; 
+          border: ${this.currentSectorId === 'void_dimension' ? '2px solid var(--gold-runic)' : (nextBiome ? '1px solid #10b981' : '1px solid #f59e0b')}; 
+          border-radius: 8px; 
+          padding: 14px 18px;
+          ${this.currentSectorId === 'void_dimension' ? 'box-shadow: 0 0 30px rgba(192, 132, 252, 0.35);' : ''}
         ">
           ${
             this.currentSectorId === 'void_dimension'
-              ? `<div style="font-family:var(--font-rune); font-size:18px; color:var(--gold-runic); font-weight:700;">
-                  👑 SUPREME COSMIC VICTORY! THE PRIMORDIAL VOID TRANSCENDED!
-                 </div>
-                 <div style="font-size:12px; color:#ffffff; margin-top:2px;">
-                   You have conquered the 7-Form Paradox Boss Rush in the Boundless Void and restored the True Shattered Sampo Matrix!
+              ? `<div>
+                  <div style="font-family:var(--font-rune); font-size:22px; color:var(--gold-runic); text-shadow:0 0 14px rgba(245, 158, 11, 0.6); letter-spacing:1px;">
+                    ⚔️ THE IRON COVENANT OF THE FORGE ⚔️
+                  </div>
+                  <div style="font-family:var(--font-mono); font-size:11px; color:#38bdf8; letter-spacing:2px; margin-top:2px;">
+                    PRIMORDIAL VOID TRANSCENDED // OMEGA TRANSMISSION
+                  </div>
+                  <div style="
+                    font-size:13px;
+                    line-height:1.65;
+                    color:#e2e8f0;
+                    margin-top:12px;
+                    text-align:left;
+                    background:rgba(0,0,0,0.6);
+                    border-left:4px solid var(--gold-runic);
+                    padding:12px 16px;
+                    border-radius:4px;
+                  ">
+                    "Operative, you stood against the cold abyss, shattered the six cosmic horrors, and banished Surma-Musta into the void. In your hands, the True Shattered Sampo Matrix hums with eternal, limitless creation.
+                    <br/><br/>
+                    <strong>The Ancient Blacksmiths offer you the Iron Pact:</strong>
+                    <br/>
+                    The cycle never sleeps. Beyond the rim of spacetime, darker horrors awaken and the Void Hungers for your marrow. Take your forged arsenal into the <strong>Overdrive Loops</strong> — where swarms are ruthless, bosses strike with lethal overclock, and only true masters of Väki survive.
+                    <br/><br/>
+                    <span style="color:#fde047; font-weight:bold;">Do you accept the covenant to test your mettle in the harder rounds?</span>"
+                  </div>
                  </div>`
               : (nextBiome
                   ? `<div style="font-family:var(--font-mono); font-size:12px; color:#10b981; font-weight:700;">
@@ -2410,7 +2425,7 @@ export class SampoGame {
                   ⚔️ ASCEND TO NEXT REALM (STAGE 0${nextBiome.order})
                  </button>`
               : `<button id="btn-saga-loop" class="sampo-btn primary" style="padding:10px 22px; font-size:13px; box-shadow:0 0 20px rgba(245, 158, 11, 0.8); cursor: pointer; pointer-events: auto;">
-                  🌟 LOOP SAGA TO STAGE 01 (OVERDRIVE)
+                  ${this.currentSectorId === 'void_dimension' ? '⚔️ SIGN THE IRON PACT (START OVERDRIVE LOOP)' : '🌟 LOOP SAGA TO STAGE 01 (OVERDRIVE)'}
                  </button>`
           }
           <button id="btn-replay-overdrive" class="sampo-btn" style="padding:10px 20px; font-size:13px; border-color:#f59e0b; color:#fde047; cursor: pointer; pointer-events: auto;">
@@ -2568,7 +2583,6 @@ export class SampoGame {
         // Visual alert and glitch on enemies near the player
         if (this.player && Math.hypot(enemy.x - this.player.x, enemy.y - this.player.y) < 16) {
           particleSystem.emitPixelGlitch(enemy.x, enemy.y, '#ef4444');
-          combatEngine.addFloatingText(enemy.x, enemy.y - 0.5, '⚠️ HARDENED (+5%)', 'crit');
         }
       }
     }
@@ -2604,10 +2618,8 @@ export class SampoGame {
           this.player.isDead = true;
           soundEngine.playHeroExplosionCataclysm();
           particleSystem.emitHeroExplosion(this.player.x, this.player.y, this.player.appearance.archetype);
-          this.camera.addShake(3.5, 0.25);
-          this.camera.targetZoom = 1.35;
-          combatEngine.addFloatingText(this.player.x, this.player.y, '💥 VESSEL DETONATED', 'crit');
-          combatEngine.addFloatingText(this.player.x, this.player.y, 'CONSCIOUSNESS SEVERED', 'void');
+          this.camera.addShake(2.0, 0.2);
+          this.camera.targetZoom = 0.85;
           this.hud.addLog(`💥 VESSEL DETONATED: Cybernetic shell vaporized. Matrix connection collapsing...`, 'alert');
         }
       } else if (this.deathSequenceState.phase === 'exploding') {
@@ -2757,187 +2769,199 @@ export class SampoGame {
           }
         }
       } else if (!this.player.isChargingSpecial) {
-        const attackRes = this.player.attack(mouseWorld.x, mouseWorld.y);
-        if (attackRes && attackRes.performed) {
-          const px = this.player.x;
-          const py = this.player.y;
+        const attackResults = this.player.attack(mouseWorld.x, mouseWorld.y);
+        if (attackResults && attackResults.length > 0) {
+          let maxShake = 0;
+          let maxShakeDur = 0;
 
-          if (attackRes.style === 'heavy_hammer_slam' || attackRes.style === 'area_slag_slam') {
-            // HEAVY HAMMER / SLAG SLAM: Full 360° Seismic Ground Quake & Proximity Pulverization
-            const slamRadius = attackRes.radius || 3.6;
-            const dmgType = attackRes.damageType || 'fire';
-            const slamColors: Record<string, { shockwave: string; decal: string; particles: string }> = {
-              fire: { shockwave: '#f97316', decal: 'rgba(234, 88, 12, 0.45)', particles: '#ea580c' },
-              frost: { shockwave: '#38bdf8', decal: 'rgba(2, 132, 199, 0.45)', particles: '#38bdf8' },
-              shock: { shockwave: '#facc15', decal: 'rgba(202, 138, 4, 0.45)', particles: '#facc15' },
-              void: { shockwave: '#c084fc', decal: 'rgba(147, 51, 234, 0.45)', particles: '#a855f7' },
-              plasma: { shockwave: '#38bdf8', decal: 'rgba(56, 189, 248, 0.45)', particles: '#38bdf8' },
-              physical: { shockwave: '#94a3b8', decal: 'rgba(71, 85, 105, 0.45)', particles: '#64748b' }
-            };
-            const fx = slamColors[dmgType] || slamColors.fire;
+          for (const attackRes of attackResults) {
+            if (!attackRes || !attackRes.performed) continue;
+            const px = this.player.x;
+            const py = this.player.y;
 
-            this.camera.addShake(1.2, 0.10);
-            particleSystem.spawnShockwave(px, py, slamRadius, fx.shockwave);
-            particleSystem.spawnDecal(px, py, slamRadius * 0.9, fx.decal, 4.0);
-            particleSystem.spawn(px, py, 18, fx.particles);
+            if (attackRes.style === 'heavy_hammer_slam' || attackRes.style === 'area_slag_slam') {
+              // HEAVY HAMMER / SLAG SLAM: Full 360° Seismic Ground Quake & Proximity Pulverization
+              const slamRadius = attackRes.radius || 3.6;
+              const dmgType = attackRes.damageType || 'fire';
+              const slamColors: Record<string, { shockwave: string; decal: string; particles: string }> = {
+                fire: { shockwave: '#f97316', decal: 'rgba(234, 88, 12, 0.45)', particles: '#ea580c' },
+                frost: { shockwave: '#38bdf8', decal: 'rgba(2, 132, 199, 0.45)', particles: '#38bdf8' },
+                shock: { shockwave: '#facc15', decal: 'rgba(202, 138, 4, 0.45)', particles: '#facc15' },
+                void: { shockwave: '#c084fc', decal: 'rgba(147, 51, 234, 0.45)', particles: '#a855f7' },
+                plasma: { shockwave: '#38bdf8', decal: 'rgba(56, 189, 248, 0.45)', particles: '#38bdf8' },
+                physical: { shockwave: '#94a3b8', decal: 'rgba(71, 85, 105, 0.45)', particles: '#64748b' }
+              };
+              const fx = slamColors[dmgType] || slamColors.fire;
 
-            // Hit ALL enemies in radius with distance-based knockback & close-quarters bonus
-            this.enemies.forEach(e => {
-              if (e.isDead) return;
-              const dx = e.x - px;
-              const dy = e.y - py;
-              const dist = Math.sqrt(dx * dx + dy * dy);
-              if (dist <= slamRadius) {
-                const res = combatEngine.calculateDamage(
-                  {
-                    damage: attackRes.damage,
-                    damageType: dmgType,
-                    critChance: dist <= 2.0 ? 25 : 15,
-                    vaki: this.player!.stats.vaki,
-                    nokkela: this.player!.stats.nokkela,
-                    attackerArchetype: this.player!.appearance.archetype,
-                    isCloseQuarters: dist <= 2.0,
-                    distanceFromAttacker: dist
-                  },
-                  { armor: e.armor, shield: 0 }
-                );
+              maxShake = Math.max(maxShake, 1.2);
+              maxShakeDur = Math.max(maxShakeDur, 0.10);
+              particleSystem.spawnShockwave(px, py, slamRadius, fx.shockwave);
+              particleSystem.spawnDecal(px, py, slamRadius * 0.9, fx.decal, 4.0);
+              particleSystem.spawn(px, py, 18, fx.particles);
 
-                combatEngine.addFloatingText(e.x, e.y, `${res.finalDamage}`, res.isCrit ? 'crit' : (dmgType as any));
-                particleSystem.spawn(e.x, e.y, 8, fx.shockwave);
-
-                // Heavy knockback away from center
-                const knockAngle = Math.atan2(e.y - py, e.x - px);
-                const knockDist = dist <= 2.0 ? 0.65 : 0.35;
-                e.x += Math.cos(knockAngle) * knockDist;
-                e.y += Math.sin(knockAngle) * knockDist;
-
-                const died = e.takeDamage(res.finalDamage, dmgType, attackRes.shieldDamageBonus || 0);
-                if (e.isBoss && !this.bossArenaBreached) {
-                  this.triggerBossArenaBreach();
-                }
-                if (died) this.handleEnemyDeath(e);
-              }
-            });
-
-            // Gateways in area
-            this.gateways.forEach(gw => {
-              if (gw.isDestroyed) return;
-              const dx = gw.x - px;
-              const dy = gw.y - py;
-              if (Math.sqrt(dx * dx + dy * dy) <= slamRadius) {
-                const res = combatEngine.calculateDamage(
-                  {
-                    damage: attackRes.damage,
-                    damageType: dmgType,
-                    critChance: 15,
-                    vaki: this.player!.stats.vaki,
-                    nokkela: this.player!.stats.nokkela,
-                    attackerArchetype: this.player!.appearance.archetype,
-                    isCloseQuarters: true
-                  },
-                  { armor: gw.armor, shield: 0 }
-                );
-                combatEngine.addFloatingText(gw.x, gw.y, `${res.finalDamage}`, dmgType as any);
-                const destroyed = gw.takeDamage(res.finalDamage);
-                if (destroyed) this.handleGatewayDestruction(gw);
-              }
-            });
-
-          } else if (attackRes.style === 'vibro_blade_slash') {
-            this.camera.addShake(0.3, 0.04);
-          } else if (attackRes.style === 'plasma_sword_cleave' || attackRes.style === 'lightning_cleave') {
-            this.camera.addShake(0.5, 0.05);
-          } else if (attackRes.style === 'rail_rifle_shot') {
-            this.camera.addShake(0.6, 0.05);
-          } else if (attackRes.style === 'scatter_shot_blast') {
-            this.camera.addShake(0.7, 0.06);
-          } else if (attackRes.style === 'lyric_rune_chime') {
-            this.camera.addShake(0.35, 0.04);
-          } else if (attackRes.style === 'death_ray' && attackRes.targetX !== undefined && attackRes.targetY !== undefined) {
-            // Concentrated Tuoni Death Ray Beam & Life Siphon
-            const tx = attackRes.targetX;
-            const ty = attackRes.targetY;
-            const bdx = tx - px;
-            const bdy = ty - py;
-            const blen = Math.sqrt(bdx * bdx + bdy * bdy);
-            const maxRayDist = 8.5;
-            const ndx = blen > 0 ? bdx / blen : 1;
-            const ndy = blen > 0 ? bdy / blen : 0;
-
-            let totalSiphoned = 0;
-            this.enemies.forEach(e => {
-              if (e.isDead) return;
-              const ex = e.x - px;
-              const ey = e.y - py;
-              const proj = ex * ndx + ey * ndy;
-              if (proj >= 0 && proj <= maxRayDist) {
-                const perpDist = Math.abs(ex * (-ndy) + ey * ndx);
-                if (perpDist <= 0.85) {
+              // Hit ALL enemies in radius with distance-based knockback & close-quarters bonus
+              this.enemies.forEach(e => {
+                if (e.isDead) return;
+                const dx = e.x - px;
+                const dy = e.y - py;
+                const dist = Math.sqrt(dx * dx + dy * dy);
+                if (dist <= slamRadius) {
                   const res = combatEngine.calculateDamage(
                     {
                       damage: attackRes.damage,
-                      damageType: 'void',
-                      critChance: 18,
+                      damageType: dmgType,
+                      critChance: dist <= 2.0 ? 25 : 15,
                       vaki: this.player!.stats.vaki,
                       nokkela: this.player!.stats.nokkela,
-                      attackerArchetype: this.player!.appearance.archetype
+                      attackerArchetype: this.player!.appearance.archetype,
+                      isCloseQuarters: dist <= 2.0,
+                      distanceFromAttacker: dist
                     },
                     { armor: e.armor, shield: 0 }
                   );
-                  combatEngine.addFloatingText(e.x, e.y, `${res.finalDamage}`, res.isCrit ? 'crit' : 'void');
-                  particleSystem.spawn(e.x, e.y, 6, '#c084fc');
 
-                  // Life & Shield Siphon
-                  const siphon = Math.max(1, Math.floor(res.finalDamage * (attackRes.siphonPercent || 0.25)));
-                  totalSiphoned += siphon;
+                  particleSystem.spawn(e.x, e.y, 8, fx.shockwave);
 
-                  const died = e.takeDamage(res.finalDamage, 'void', attackRes.shieldDamageBonus || 0);
+                  // Heavy knockback away from center
+                  const knockAngle = Math.atan2(e.y - py, e.x - px);
+                  const knockDist = dist <= 2.0 ? 0.65 : 0.35;
+                  e.x += Math.cos(knockAngle) * knockDist;
+                  e.y += Math.sin(knockAngle) * knockDist;
+
+                  const died = e.takeDamage(res.finalDamage, dmgType, attackRes.shieldDamageBonus || 0);
                   if (e.isBoss && !this.bossArenaBreached) {
                     this.triggerBossArenaBreach();
                   }
                   if (died) this.handleEnemyDeath(e);
                 }
-              }
-            });
+              });
 
-            // Siphon life back to player
-            if (totalSiphoned > 0) {
-              this.player.health = Math.min(this.player.maxHealth, this.player.health + totalSiphoned);
-              this.player.shield = Math.min(this.player.maxShield, this.player.shield + Math.floor(totalSiphoned * 0.5));
-              combatEngine.addFloatingText(px, py - 0.5, `+${totalSiphoned} HP`, 'heal');
-              particleSystem.spawn(px, py, 6, '#10b981');
-            }
-
-            // Gateways hit by death ray
-            this.gateways.forEach(gw => {
-              if (gw.isDestroyed) return;
-              const gx = gw.x - px;
-              const gy = gw.y - py;
-              const proj = gx * ndx + gy * ndy;
-              if (proj >= 0 && proj <= maxRayDist) {
-                const perpDist = Math.abs(gx * (-ndy) + gy * ndx);
-                if (perpDist <= 1.0) {
+              // Gateways in area
+              this.gateways.forEach(gw => {
+                if (gw.isDestroyed) return;
+                const dx = gw.x - px;
+                const dy = gw.y - py;
+                if (Math.sqrt(dx * dx + dy * dy) <= slamRadius) {
                   const res = combatEngine.calculateDamage(
                     {
                       damage: attackRes.damage,
-                      damageType: 'void',
+                      damageType: dmgType,
                       critChance: 15,
                       vaki: this.player!.stats.vaki,
                       nokkela: this.player!.stats.nokkela,
-                      attackerArchetype: this.player!.appearance.archetype
+                      attackerArchetype: this.player!.appearance.archetype,
+                      isCloseQuarters: true
                     },
                     { armor: gw.armor, shield: 0 }
                   );
-                  combatEngine.addFloatingText(gw.x, gw.y, `${res.finalDamage}`, 'void');
                   const destroyed = gw.takeDamage(res.finalDamage);
                   if (destroyed) this.handleGatewayDestruction(gw);
                 }
-              }
-            });
+              });
 
-            this.camera.addShake(0.35, 0.05);
+            } else if (attackRes.style === 'vibro_blade_slash') {
+              maxShake = Math.max(maxShake, 0.3);
+              maxShakeDur = Math.max(maxShakeDur, 0.04);
+            } else if (attackRes.style === 'plasma_sword_cleave' || attackRes.style === 'lightning_cleave') {
+              maxShake = Math.max(maxShake, 0.5);
+              maxShakeDur = Math.max(maxShakeDur, 0.05);
+            } else if (attackRes.style === 'rail_rifle_shot') {
+              maxShake = Math.max(maxShake, 0.6);
+              maxShakeDur = Math.max(maxShakeDur, 0.05);
+            } else if (attackRes.style === 'scatter_shot_blast') {
+              maxShake = Math.max(maxShake, 0.7);
+              maxShakeDur = Math.max(maxShakeDur, 0.06);
+            } else if (attackRes.style === 'lyric_rune_chime') {
+              maxShake = Math.max(maxShake, 0.35);
+              maxShakeDur = Math.max(maxShakeDur, 0.04);
+            } else if (attackRes.style === 'death_ray' && attackRes.targetX !== undefined && attackRes.targetY !== undefined) {
+              // Concentrated Tuoni Death Ray Beam & Life Siphon
+              const tx = attackRes.targetX;
+              const ty = attackRes.targetY;
+              const bdx = tx - px;
+              const bdy = ty - py;
+              const blen = Math.sqrt(bdx * bdx + bdy * bdy);
+              const maxRayDist = 8.5;
+              const ndx = blen > 0 ? bdx / blen : 1;
+              const ndy = blen > 0 ? bdy / blen : 0;
+
+              let totalSiphoned = 0;
+              this.enemies.forEach(e => {
+                if (e.isDead) return;
+                const ex = e.x - px;
+                const ey = e.y - py;
+                const proj = ex * ndx + ey * ndy;
+                if (proj >= 0 && proj <= maxRayDist) {
+                  const perpDist = Math.abs(ex * (-ndy) + ey * ndx);
+                  if (perpDist <= 0.85) {
+                    const res = combatEngine.calculateDamage(
+                      {
+                        damage: attackRes.damage,
+                        damageType: 'void',
+                        critChance: 18,
+                        vaki: this.player!.stats.vaki,
+                        nokkela: this.player!.stats.nokkela,
+                        attackerArchetype: this.player!.appearance.archetype
+                      },
+                      { armor: e.armor, shield: 0 }
+                    );
+                    particleSystem.spawn(e.x, e.y, 6, '#c084fc');
+
+                    // Life & Shield Siphon
+                    const siphon = Math.max(1, Math.floor(res.finalDamage * (attackRes.siphonPercent || 0.25)));
+                    totalSiphoned += siphon;
+
+                    const died = e.takeDamage(res.finalDamage, 'void', attackRes.shieldDamageBonus || 0);
+                    if (e.isBoss && !this.bossArenaBreached) {
+                      this.triggerBossArenaBreach();
+                    }
+                    if (died) this.handleEnemyDeath(e);
+                  }
+                }
+              });
+
+              // Siphon life back to player
+              if (totalSiphoned > 0) {
+                this.player.health = Math.min(this.player.maxHealth, this.player.health + totalSiphoned);
+                this.player.shield = Math.min(this.player.maxShield, this.player.shield + Math.floor(totalSiphoned * 0.5));
+                combatEngine.addFloatingText(px, py - 0.5, `+${totalSiphoned} HP`, 'heal');
+                particleSystem.spawn(px, py, 6, '#10b981');
+              }
+
+              // Gateways hit by death ray
+              this.gateways.forEach(gw => {
+                if (gw.isDestroyed) return;
+                const gx = gw.x - px;
+                const gy = gw.y - py;
+                const proj = gx * ndx + gy * ndy;
+                if (proj >= 0 && proj <= maxRayDist) {
+                  const perpDist = Math.abs(gx * (-ndy) + gy * ndx);
+                  if (perpDist <= 1.0) {
+                    const res = combatEngine.calculateDamage(
+                      {
+                        damage: attackRes.damage,
+                        damageType: 'void',
+                        critChance: 15,
+                        vaki: this.player!.stats.vaki,
+                        nokkela: this.player!.stats.nokkela,
+                        attackerArchetype: this.player!.appearance.archetype
+                      },
+                      { armor: gw.armor, shield: 0 }
+                    );
+                    const destroyed = gw.takeDamage(res.finalDamage);
+                    if (destroyed) this.handleGatewayDestruction(gw);
+                  }
+                }
+              });
+
+              maxShake = Math.max(maxShake, 0.35);
+              maxShakeDur = Math.max(maxShakeDur, 0.05);
+            }
           }
-          // Note: 'triple_homing_salvo' projectiles are automatically updated & checked by projectileManager
+
+          if (maxShake > 0) {
+            this.camera.addShake(maxShake, maxShakeDur);
+          }
         }
       }
     } else {
@@ -3197,11 +3221,24 @@ export class SampoGame {
       }
     });
 
-    // Only acquire targets that are actively visible in line of sight (not hidden behind walls/unexplored fog)
-    const livingTargets = [
-      ...this.enemies.filter(e => !e.isDead && (this.fog ? this.fog.isVisible(e.x, e.y) : true)).map(e => ({ x: e.x, y: e.y })),
-      ...this.gateways.filter(gw => !gw.isDestroyed && (this.fog ? this.fog.isVisible(gw.x, gw.y) : true)).map(gw => ({ x: gw.x, y: gw.y }))
-    ];
+    // Only acquire targets if player has active homing projectiles
+    let livingTargets: { x: number; y: number }[] | undefined = undefined;
+    const hasHoming = projectileManager.projectiles.some(p => p.homing && p.fromPlayer);
+    if (hasHoming) {
+      livingTargets = [];
+      for (let i = 0; i < this.enemies.length; i++) {
+        const e = this.enemies[i];
+        if (!e.isDead && (!this.fog || this.fog.isVisible(e.x, e.y))) {
+          livingTargets.push(e);
+        }
+      }
+      for (let i = 0; i < this.gateways.length; i++) {
+        const gw = this.gateways[i];
+        if (!gw.isDestroyed && (!this.fog || this.fog.isVisible(gw.x, gw.y))) {
+          livingTargets.push(gw);
+        }
+      }
+    }
 
     // Update Projectiles & Check Hits
     projectileManager.update(
@@ -3220,17 +3257,24 @@ export class SampoGame {
       livingTargets
     );
 
-    // Check Projectile Collisions
-    projectileManager.projectiles.forEach(p => {
+    // Check Projectile Collisions (Optimized O(1) swap-and-pop, squared distance)
+    const projs = projectileManager.projectiles;
+    for (let pi = projs.length - 1; pi >= 0; pi--) {
+      const p = projs[pi];
+      let projectileRemoved = false;
+
       if (p.fromPlayer) {
         // Hits on enemies
-        this.enemies.forEach(e => {
-          if (e.isDead) return;
-          if (p.hitEntityIds && p.hitEntityIds.has(e.id)) return;
+        for (let ei = 0; ei < this.enemies.length; ei++) {
+          const e = this.enemies[ei];
+          if (e.isDead) continue;
+          if (p.hitEntityIds && p.hitEntityIds.has(e.id)) continue;
 
           const dx = e.x - p.x;
           const dy = e.y - p.y;
-          if (Math.sqrt(dx * dx + dy * dy) <= e.radius + p.radius) {
+          const maxReach = e.radius + p.radius;
+
+          if (dx * dx + dy * dy <= maxReach * maxReach) {
             if (p.hitEntityIds) {
               p.hitEntityIds.add(e.id);
             }
@@ -3240,7 +3284,7 @@ export class SampoGame {
 
             // Distance-based proximity damage calculation for Aegis Shield Wave & falloff attacks
             if (p.damageFalloff && p.startX !== undefined && p.startY !== undefined) {
-              const distFromOrigin = Math.sqrt((e.x - p.startX) ** 2 + (e.y - p.startY) ** 2);
+              const distFromOrigin = Math.hypot(e.x - p.startX, e.y - p.startY);
               let distMult = 1.0;
 
               if (distFromOrigin <= 1.4) {
@@ -3277,7 +3321,6 @@ export class SampoGame {
             );
 
             if (isPointBlank) {
-              combatEngine.addFloatingText(e.x, e.y, `💥 ${res.finalDamage}`, 'crit');
               soundEngine.playHitImpact(true);
               this.camera.addShake(0.7, 0.06);
               particleSystem.emitShockwave(e.x, e.y, 2.0, '#facc15');
@@ -3289,14 +3332,12 @@ export class SampoGame {
               e.x += Math.cos(knockAngle) * 0.55;
               e.y += Math.sin(knockAngle) * 0.55;
             } else if (p.style === 'aegis_shield_wave') {
-              combatEngine.addFloatingText(e.x, e.y, `${res.finalDamage}`, res.isCrit ? 'crit' : 'shock');
               soundEngine.playHitImpact(false);
               particleSystem.emitSparks(e.x, e.y, 0.25, '#38bdf8', 4);
               const knockAngle = Math.atan2(p.vy, p.vx);
               e.x += Math.cos(knockAngle) * 0.25;
               e.y += Math.sin(knockAngle) * 0.25;
             } else {
-              combatEngine.addFloatingText(e.x, e.y, `${res.finalDamage}`, res.isCrit ? 'crit' : res.damageType);
               this.camera.addShake(p.style === 'homing_missile' ? 0.75 : 0.35, 0.05);
 
               if (p.style === 'homing_missile') {
@@ -3310,7 +3351,10 @@ export class SampoGame {
 
             p.pierceCount--;
             if (p.pierceCount <= 0) {
-              projectileManager.remove(p.id);
+              projectileManager.recycle(p);
+              projs[pi] = projs[projs.length - 1];
+              projs.pop();
+              projectileRemoved = true;
             }
 
             const died = e.takeDamage(res.finalDamage, res.damageType, p.shieldDamageBonus || 0);
@@ -3319,40 +3363,50 @@ export class SampoGame {
             if (p.areaRadius && p.areaRadius > 0) {
               particleSystem.emitShockwave(p.x, p.y, p.areaRadius, p.color || '#38bdf8');
               particleSystem.emitSparks(p.x, p.y, 0.35, p.color || '#38bdf8', 4);
-              this.enemies.forEach(otherE => {
-                if (otherE.isDead || otherE.id === e.id) return;
-                const aDist = Math.hypot(otherE.x - p.x, otherE.y - p.y);
-                if (aDist <= p.areaRadius!) {
+              const areaRadSq = p.areaRadius * p.areaRadius;
+              for (let oi = 0; oi < this.enemies.length; oi++) {
+                const otherE = this.enemies[oi];
+                if (otherE.isDead || otherE.id === e.id) continue;
+                const adx = otherE.x - p.x;
+                const ady = otherE.y - p.y;
+                const aDistSq = adx * adx + ady * ady;
+                if (aDistSq <= areaRadSq) {
+                  const aDist = Math.sqrt(aDistSq);
                   const splashDmg = Math.max(1, Math.round(res.finalDamage * (1.0 - (aDist / p.areaRadius!) * 0.45)));
-                  combatEngine.addFloatingText(otherE.x, otherE.y, `💥 ${splashDmg}`, 'crit');
                   const otherDied = otherE.takeDamage(splashDmg, res.damageType, p.shieldDamageBonus || 0);
                   if (otherDied) this.handleEnemyDeath(otherE);
                 }
-              });
+              }
             }
 
             if (e.isBoss && !this.bossArenaBreached) {
               this.triggerBossArenaBreach();
             }
             if (died) this.handleEnemyDeath(e);
+
+            if (projectileRemoved) break;
           }
-        });
+        }
+
+        if (projectileRemoved) continue;
 
         // Hits on Gateways
-        this.gateways.forEach(gw => {
-          if (gw.isDestroyed) return;
-          if (p.hitEntityIds && p.hitEntityIds.has(gw.id)) return;
+        for (let gi = 0; gi < this.gateways.length; gi++) {
+          const gw = this.gateways[gi];
+          if (gw.isDestroyed) continue;
+          if (p.hitEntityIds && p.hitEntityIds.has(gw.id)) continue;
 
           const dx = gw.x - p.x;
           const dy = gw.y - p.y;
-          if (Math.sqrt(dx * dx + dy * dy) <= gw.radius + p.radius) {
+          const maxGwReach = gw.radius + p.radius;
+          if (dx * dx + dy * dy <= maxGwReach * maxGwReach) {
             if (p.hitEntityIds) {
               p.hitEntityIds.add(gw.id);
             }
 
             let baseDamage = p.damage;
             if (p.damageFalloff && p.startX !== undefined && p.startY !== undefined) {
-              const distFromOrigin = Math.sqrt((gw.x - p.startX) ** 2 + (gw.y - p.startY) ** 2);
+              const distFromOrigin = Math.hypot(gw.x - p.startX, gw.y - p.startY);
               if (distFromOrigin <= 1.4) baseDamage = Math.round(p.damage * 1.8);
               else if (distFromOrigin <= 2.8) baseDamage = p.damage;
               else baseDamage = Math.round(p.damage * 0.65);
@@ -3369,7 +3423,6 @@ export class SampoGame {
               { armor: gw.armor, shield: 0 }
             );
 
-            combatEngine.addFloatingText(gw.x, gw.y, `${res.finalDamage}`, res.isCrit ? 'crit' : res.damageType);
             this.camera.addShake(0.4, 0.05);
 
             if (p.style === 'homing_missile') {
@@ -3379,27 +3432,34 @@ export class SampoGame {
 
             p.pierceCount--;
             if (p.pierceCount <= 0) {
-              projectileManager.remove(p.id);
+              projectileManager.recycle(p);
+              projs[pi] = projs[projs.length - 1];
+              projs.pop();
+              projectileRemoved = true;
             }
 
             const destroyed = gw.takeDamage(res.finalDamage);
             if (destroyed) this.handleGatewayDestruction(gw);
+
+            if (projectileRemoved) break;
           }
-        });
+        }
       } else {
         // Enemy projectile hits player
         const dx = this.player!.x - p.x;
         const dy = this.player!.y - p.y;
-        const dist = Math.sqrt(dx * dx + dy * dy);
+        const maxPlReach = this.player!.radius + p.radius;
 
-        // Direct Hit on Player Body
-        if (dist <= this.player!.radius + p.radius) {
+        // Direct Hit on Player Body (squared distance check)
+        if (dx * dx + dy * dy <= maxPlReach * maxPlReach) {
           const res = combatEngine.calculateDamage(
             { damage: p.damage, damageType: p.damageType, critChance: 8, vaki: 6, nokkela: 6 },
             { armor: this.player!.armor, shield: this.player!.shield, isInvulnerable: this.player!.isInvulnerable }
           );
           const attackerName = p.sourceName || 'Hostile Artillery';
-          projectileManager.remove(p.id);
+          projectileManager.recycle(p);
+          projs[pi] = projs[projs.length - 1];
+          projs.pop();
           const died = this.player!.takeDamage(res.finalDamage, res.damageType, attackerName);
           this.camera.addShake(1.0, 0.08);
           if (died) {
@@ -3412,7 +3472,7 @@ export class SampoGame {
           }
         }
       }
-    });
+    }
 
 
     // Update Particles & Floaters
@@ -3485,12 +3545,16 @@ export class SampoGame {
       // Increasing earthquake camera shake as time runs out (calm subtle tremor)
       this.camera.addShake(0.4 + this.collapseIntensity * 1.0, 0.06);
 
-      // Disintegrating simulation reality-tear & digital glitch FX tearing into the void
-      const glitchCount = Math.floor(2 + this.collapseIntensity * 12);
-      for (let i = 0; i < glitchCount; i++) {
-        const rx = this.player.x + (Math.random() - 0.5) * 22;
-        const ry = this.player.y + (Math.random() - 0.5) * 22;
-        particleSystem.emitPixelGlitch(rx, ry);
+      // Disintegrating simulation reality-tear & digital glitch FX tearing into the void (throttled)
+      this.escapeGlitchTimer += dt;
+      if (this.escapeGlitchTimer >= 0.05) {
+        this.escapeGlitchTimer = 0;
+        const glitchCount = Math.floor(1 + this.collapseIntensity * 5);
+        for (let i = 0; i < glitchCount; i++) {
+          const rx = this.player.x + (Math.random() - 0.5) * 22;
+          const ry = this.player.y + (Math.random() - 0.5) * 22;
+          particleSystem.emitPixelGlitch(rx, ry);
+        }
       }
 
       // Check Proximity to Escape Portal & Update Navigation Beacon

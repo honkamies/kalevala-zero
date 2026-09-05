@@ -183,6 +183,8 @@ export class MainMenuUI {
               <span>⚡ ${this.player ? this.player.naniteScrap : 150} SCRAP</span>
               <span>•</span>
               <span>${totalCleared}/6 REALMS</span>
+              <span>•</span>
+              <span style="color:#38bdf8; font-weight:700;">⚔️ ${this.player?.baseWeapon?.name || 'Innate Weapon'}</span>
             </div>
           </div>
           <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">

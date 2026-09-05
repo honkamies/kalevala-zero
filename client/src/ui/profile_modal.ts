@@ -2,6 +2,7 @@
 // Allows switching operatives, synthesizing new zero-stat profiles, resetting profiles, or total factory wipe
 
 import { profileManager, GameProfile } from '../systems/profiles';
+import { getStarterWeaponForArchetype } from '../systems/items';
 import { soundEngine } from '../engine/audio';
 import { HeroRenderer } from '../engine/hero_renderer';
 
@@ -202,8 +203,10 @@ export class ProfileModalUI {
                       ${archTitle} &bull; <span style="color:#67e8f9;">LVL ${p.playerData?.level || 1}</span> (${p.playerData?.xp || 0} XP)
                     </div>
 
-                    <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); display:flex; gap:12px; align-items:center;">
+                    <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
                       <span>⚡ ${p.playerData?.naniteScrap !== undefined ? p.playerData.naniteScrap : 150} Scrap</span>
+                      <span>•</span>
+                      <span style="color:#38bdf8; font-weight:700;">⚔️ ${p.playerData?.baseWeapon?.name || getStarterWeaponForArchetype(p.archetype).name}</span>
                       <span>•</span>
                       <span style="color:${clearedCount > 0 ? '#10b981' : '#94a3b8'};">
                         🌌 ${clearedCount}/6 Realms ${totalClears > 0 ? `(${totalClears} Clears)` : ''}

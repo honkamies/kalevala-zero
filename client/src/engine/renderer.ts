@@ -31,6 +31,18 @@ interface DynamicRenderItem {
   extractionState?: any;
 }
 
+const FLOATING_TEXT_COLORS: Record<string, string> = {
+  physical: '#ffffff',
+  plasma: '#38bdf8',
+  frost: '#67e8f9',
+  shock: '#facc15',
+  void: '#c084fc',
+  fire: '#f97316',
+  crit: '#ef4444',
+  heal: '#10b981',
+  status: '#f59e0b'
+};
+
 export class IsometricRenderer {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
@@ -351,10 +363,7 @@ export class IsometricRenderer {
       ctx.strokeStyle = sw.color;
       ctx.lineWidth = 3.5 * zoom;
       ctx.globalAlpha = sw.alpha;
-      ctx.shadowColor = sw.color;
-      ctx.shadowBlur = 14;
       ctx.stroke();
-      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1.0;
     });
 
@@ -391,8 +400,6 @@ export class IsometricRenderer {
       if (s.shape === 'rune_plate' && s.glyph) {
         ctx.font = `bold ${Math.floor((s.size + 8) * zoom)}px serif`;
         ctx.fillStyle = s.color;
-        ctx.shadowColor = s.glowColor;
-        ctx.shadowBlur = 12;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(s.glyph, 0, 0);
@@ -402,8 +409,6 @@ export class IsometricRenderer {
         ctx.arc(0, 0, sz, 0, Math.PI * 2);
         ctx.strokeStyle = s.color;
         ctx.lineWidth = 2 * zoom;
-        ctx.shadowColor = s.glowColor;
-        ctx.shadowBlur = 8;
         ctx.stroke();
         for (let g = 0; g < 4; g++) {
           const ga = (Math.PI / 2) * g;
@@ -423,8 +428,6 @@ export class IsometricRenderer {
         }
         ctx.closePath();
         ctx.fillStyle = s.color;
-        ctx.shadowColor = s.glowColor;
-        ctx.shadowBlur = 10;
         ctx.fill();
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 1 * zoom;
@@ -434,8 +437,6 @@ export class IsometricRenderer {
         ctx.beginPath();
         ctx.ellipse(0, 0, sz, sz * 0.55, 0, 0, Math.PI * 2);
         ctx.fillStyle = s.color;
-        ctx.shadowColor = s.glowColor;
-        ctx.shadowBlur = 14;
         ctx.fill();
       }
 
@@ -451,41 +452,29 @@ export class IsometricRenderer {
       const sx = vpCenterX + (relX - relY) * halfW;
       const sy = vpCenterY + (relX + relY) * halfH - (p.z || 0) * 20 * zoom;
       if (p.shape === 'matrix_hex' && p.text) {
-        ctx.save();
         ctx.font = `bold ${Math.floor(p.size * zoom)}px "Share Tech Mono", monospace`;
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.glowColor || p.color;
-        ctx.shadowBlur = 8;
         ctx.globalAlpha = p.alpha;
         ctx.fillText(p.text, sx, sy);
-        ctx.restore();
       } else if (p.shape === 'glitch_line') {
-        ctx.save();
         const lineW = (p.width || p.size * 6) * zoom;
         const lineH = Math.max(1.5, (p.height || 2) * zoom);
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.glowColor || p.color;
-        ctx.shadowBlur = 6;
         ctx.globalAlpha = p.alpha;
         ctx.fillRect(sx - lineW / 2, sy - lineH / 2, lineW, lineH);
         // Chromatic offset ghost
         ctx.fillStyle = '#00f0ff';
         ctx.globalAlpha = p.alpha * 0.45;
         ctx.fillRect(sx - lineW / 2 + 2 * zoom, sy - lineH / 2, lineW, lineH);
-        ctx.restore();
       } else if (p.shape === 'pixel') {
-        ctx.save();
         const sqSize = p.size * zoom;
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.glowColor || p.color;
-        ctx.shadowBlur = 6;
         ctx.globalAlpha = p.alpha;
         ctx.fillRect(sx - sqSize / 2, sy - sqSize / 2, sqSize, sqSize);
         // Micro highlight pixel
         ctx.fillStyle = '#ffffff';
         ctx.globalAlpha = p.alpha * 0.4;
         ctx.fillRect(sx - sqSize / 2 + 1, sy - sqSize / 2 + 1, Math.max(1, sqSize * 0.35), Math.max(1, sqSize * 0.35));
-        ctx.restore();
       } else if (p.shape === 'shard') {
         ctx.save();
         ctx.translate(sx, sy);
@@ -493,8 +482,6 @@ export class IsometricRenderer {
         ctx.rotate(rot);
         const sSize = p.size * zoom;
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.glowColor || p.color;
-        ctx.shadowBlur = 8;
         ctx.globalAlpha = p.alpha;
         ctx.beginPath();
         ctx.moveTo(0, -sSize);
@@ -504,11 +491,8 @@ export class IsometricRenderer {
         ctx.fill();
         ctx.restore();
       } else if (p.shape === 'lightning_streak') {
-        ctx.save();
         const len = (p.size || 20) * zoom;
         ctx.strokeStyle = p.color;
-        ctx.shadowColor = p.glowColor || '#38bdf8';
-        ctx.shadowBlur = 10;
         ctx.lineWidth = Math.max(1.5, 2.5 * zoom);
         ctx.globalAlpha = p.alpha;
         ctx.beginPath();
@@ -517,55 +501,47 @@ export class IsometricRenderer {
         ctx.lineTo(sx + len * 0.2, sy - (Math.random() - 0.5) * 8);
         ctx.lineTo(sx + len * 0.5, sy + (Math.random() - 0.5) * 4);
         ctx.stroke();
-        ctx.restore();
       } else if (p.glyph) {
         ctx.font = `${Math.floor(16 * zoom)}px serif`;
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
         ctx.fillText(p.glyph, sx, sy);
-        ctx.globalAlpha = 1.0;
       } else {
         ctx.beginPath();
         ctx.arc(sx, sy, p.size * zoom, 0, Math.PI * 2);
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
         ctx.fill();
-        ctx.globalAlpha = 1.0;
       }
     });
+    ctx.globalAlpha = 1.0;
 
-    // 7. RENDER FLOATING COMBAT TEXT
-    combat.floatingTexts.forEach(ft => {
-      if (ft.x < bounds.minX - 1 || ft.x > bounds.maxX + 1 ||
-          ft.y < bounds.minY - 1 || ft.y > bounds.maxY + 1) return;
-      const relX = ft.x - camX;
-      const relY = ft.y - camY;
-      const sx = vpCenterX + (relX - relY) * halfW;
-      const sy = vpCenterY + (relX + relY) * halfH - 25 * zoom;
-      ctx.save();
-      ctx.font = ft.type === 'crit' ? `bold ${Math.floor(20 * zoom)}px Share Tech Mono, monospace` : `bold ${Math.floor(15 * zoom)}px Share Tech Mono, monospace`;
+    // 7. RENDER FLOATING COMBAT TEXT (Zero GC, strokeText outline instead of shadowBlur)
+    if (combat.floatingTexts.length > 0) {
+      const critFont = `bold ${Math.floor(20 * zoom)}px Share Tech Mono, monospace`;
+      const normalFont = `bold ${Math.floor(15 * zoom)}px Share Tech Mono, monospace`;
       ctx.textAlign = 'center';
-      
-      const colors: Record<string, string> = {
-        physical: '#ffffff',
-        plasma: '#38bdf8',
-        frost: '#67e8f9',
-        shock: '#facc15',
-        void: '#c084fc',
-        fire: '#f97316',
-        crit: '#ef4444',
-        heal: '#10b981',
-        status: '#f59e0b'
-      };
+      ctx.lineWidth = Math.max(1, 2 * zoom);
+      ctx.strokeStyle = '#000000';
 
-      ctx.fillStyle = colors[ft.type] || '#ffffff';
-      if (zoom >= 0.85) {
-        ctx.shadowColor = '#000000';
-        ctx.shadowBlur = 4;
+      for (let fi = 0; fi < combat.floatingTexts.length; fi++) {
+        const ft = combat.floatingTexts[fi];
+        if (ft.x < bounds.minX - 1 || ft.x > bounds.maxX + 1 ||
+            ft.y < bounds.minY - 1 || ft.y > bounds.maxY + 1) continue;
+        const relX = ft.x - camX;
+        const relY = ft.y - camY;
+        const sx = vpCenterX + (relX - relY) * halfW;
+        const sy = vpCenterY + (relX + relY) * halfH - 25 * zoom;
+
+        ctx.font = ft.type === 'crit' ? critFont : normalFont;
+        ctx.fillStyle = FLOATING_TEXT_COLORS[ft.type] || '#ffffff';
+        if (zoom >= 0.85) {
+          ctx.strokeText(ft.text, sx, sy);
+        }
+        ctx.fillText(ft.text, sx, sy);
       }
-      ctx.fillText(ft.text, sx, sy);
-      ctx.restore();
-    });
+      ctx.textAlign = 'left';
+    }
 
     // 8. RENDER DYNAMIC LIGHTING PASS (Directional Hero Sight Masking)
     lighting.clearTransientLights();
@@ -585,7 +561,7 @@ export class IsometricRenderer {
 
     let projLightCount = 0;
     for (let i = 0; i < projectiles.projectiles.length; i++) {
-      if (projLightCount >= 24) break;
+      if (projLightCount >= 8) break;
       const p = projectiles.projectiles[i];
       if (p.x >= bounds.minX - 1 && p.x <= bounds.maxX + 1 &&
           p.y >= bounds.minY - 1 && p.y <= bounds.maxY + 1) {
@@ -1578,11 +1554,12 @@ export class IsometricRenderer {
       const endX = Math.cos(screenAngle) * aimLength;
       const endY = playerScreenCenterY + Math.sin(screenAngle) * aimLength;
 
+      const effectiveWpnDmgType = player.equipment.mainHand?.damageType || player.baseWeapon?.damageType;
       const laserColor = player.overclockTimer > 0
         ? '#f59e0b'
-        : (player.equipment.mainHand?.damageType === 'void'
+        : (effectiveWpnDmgType === 'void'
           ? '#c084fc'
-          : (player.equipment.mainHand?.damageType === 'frost'
+          : (effectiveWpnDmgType === 'frost'
             ? '#67e8f9'
             : '#38bdf8'));
 
@@ -1683,7 +1660,7 @@ export class IsometricRenderer {
       const endAngle = startAngle + 0.6;
       const swingR = (28 + progress * 14) * z;
 
-      const weaponDmgType = player.equipment.mainHand?.damageType || 'shock';
+      const weaponDmgType = player.equipment.mainHand?.damageType || player.baseWeapon?.damageType || 'shock';
       const swingColor = player.overclockTimer > 0
         ? '#f59e0b'
         : (weaponDmgType === 'fire' ? '#f97316' : (weaponDmgType === 'frost' ? '#38bdf8' : (weaponDmgType === 'void' ? '#c084fc' : (weaponDmgType === 'shock' ? '#facc15' : '#38bdf8'))));
@@ -1694,8 +1671,6 @@ export class IsometricRenderer {
       ctx.arc(0, heightOffset, swingR, startAngle, endAngle);
       ctx.strokeStyle = swingColor;
       ctx.lineWidth = Math.max(2, (6 - progress * 3)) * z;
-      ctx.shadowColor = swingColor;
-      ctx.shadowBlur = 14;
       ctx.stroke();
 
       // Bright weapon blade edge
@@ -1711,8 +1686,6 @@ export class IsometricRenderer {
       ctx.beginPath();
       ctx.arc(tipX, tipY, 3 * z, 0, Math.PI * 2);
       ctx.fillStyle = '#fef08a';
-      ctx.shadowColor = swingColor;
-      ctx.shadowBlur = 12;
       ctx.fill();
 
       ctx.restore();
@@ -1724,7 +1697,7 @@ export class IsometricRenderer {
       const radius = (14 + progress * 52) * z;
       const alpha = Math.max(0, 1 - progress);
 
-      const weaponDmgType = player.equipment.mainHand?.damageType || 'fire';
+      const weaponDmgType = (player.baseWeapon?.weaponCategory === 'heavy_hammer' ? player.baseWeapon?.damageType : null) || player.equipment.mainHand?.damageType || player.baseWeapon?.damageType || 'fire';
       const slamBaseRgb = weaponDmgType === 'frost' ? '56, 189, 248' : (weaponDmgType === 'void' ? '192, 132, 252' : (weaponDmgType === 'shock' ? '250, 204, 21' : '249, 115, 22'));
       const slamGlow = weaponDmgType === 'frost' ? '#0284c7' : (weaponDmgType === 'void' ? '#9333ea' : (weaponDmgType === 'shock' ? '#ca8a04' : '#ea580c'));
 
@@ -1734,8 +1707,6 @@ export class IsometricRenderer {
       ctx.ellipse(0, 10 * z, radius, radius * 0.55, 0, 0, Math.PI * 2);
       ctx.strokeStyle = `rgba(${slamBaseRgb}, ${alpha * 0.9})`;
       ctx.lineWidth = 6 * z;
-      ctx.shadowColor = slamGlow;
-      ctx.shadowBlur = 18;
       ctx.stroke();
 
       // Inner bright core
@@ -1779,8 +1750,6 @@ export class IsometricRenderer {
       ctx.lineTo(endX, endY);
       ctx.strokeStyle = 'rgba(192, 132, 252, 0.45)';
       ctx.lineWidth = 14 * z;
-      ctx.shadowColor = '#c084fc';
-      ctx.shadowBlur = 18;
       ctx.stroke();
 
       // Mid magenta laser core
@@ -1820,10 +1789,11 @@ export class IsometricRenderer {
       // Target impact burn flare
       ctx.beginPath();
       ctx.arc(endX, endY, 8 * z, 0, Math.PI * 2);
-      ctx.fillStyle = '#ec4899';
-      ctx.shadowColor = '#c084fc';
-      ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(236, 72, 153, 0.7)';
       ctx.fill();
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2 * z;
+      ctx.stroke();
 
       ctx.beginPath();
       ctx.arc(endX, endY, 3.5 * z, 0, Math.PI * 2);
@@ -1854,11 +1824,12 @@ export class IsometricRenderer {
         ctx.lineTo(-6 * z, 4 * z);
         ctx.closePath();
         ctx.fillStyle = '#e0f2fe';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 10;
         ctx.fill();
         ctx.strokeStyle = '#0284c7';
-        ctx.lineWidth = 1.5 * z;
+        ctx.lineWidth = 2 * z;
+        ctx.stroke();
+        ctx.strokeStyle = '#38bdf8';
+        ctx.lineWidth = 1 * z;
         ctx.stroke();
         break;
 
@@ -1877,8 +1848,6 @@ export class IsometricRenderer {
         }
         ctx.closePath();
         ctx.fillStyle = '#b45309';
-        ctx.shadowColor = '#facc15';
-        ctx.shadowBlur = 8;
         ctx.fill();
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 2 * z;
@@ -1890,9 +1859,10 @@ export class IsometricRenderer {
         ctx.beginPath();
         ctx.arc(0, -2 * z, 8 * z, 0, Math.PI * 2);
         ctx.fillStyle = '#581c87';
-        ctx.shadowColor = '#c084fc';
-        ctx.shadowBlur = 14;
         ctx.fill();
+        ctx.strokeStyle = '#c084fc';
+        ctx.lineWidth = 2 * z;
+        ctx.stroke();
 
         ctx.fillStyle = '#f3e8ff';
         ctx.beginPath();
@@ -1909,9 +1879,10 @@ export class IsometricRenderer {
         grad.addColorStop(0.5, '#ea580c');
         grad.addColorStop(1, '#7c2d12');
         ctx.fillStyle = grad;
-        ctx.shadowColor = '#f97316';
-        ctx.shadowBlur = 12;
         ctx.fill();
+        ctx.strokeStyle = '#f97316';
+        ctx.lineWidth = 2 * z;
+        ctx.stroke();
         break;
 
       case 'mega_plasma_orb':
@@ -1928,9 +1899,11 @@ export class IsometricRenderer {
         megaGrad.addColorStop(0.7, '#818cf8');
         megaGrad.addColorStop(1, 'rgba(192, 132, 252, 0.2)');
         ctx.fillStyle = megaGrad;
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 24;
         ctx.fill();
+
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+        ctx.lineWidth = 2.5 * z;
+        ctx.stroke();
 
         // Orbiting lightning nodes
         ctx.strokeStyle = '#ffffff';
@@ -1951,8 +1924,6 @@ export class IsometricRenderer {
         ctx.lineTo(18 * z, 0);
         ctx.strokeStyle = '#facc15';
         ctx.lineWidth = 3.5 * z;
-        ctx.shadowColor = '#fef08a';
-        ctx.shadowBlur = 14;
         ctx.stroke();
 
         ctx.strokeStyle = '#ffffff';
@@ -1972,8 +1943,6 @@ export class IsometricRenderer {
         ctx.lineTo(-7 * z, 2.5 * z);
         ctx.closePath();
         ctx.fillStyle = '#f97316';
-        ctx.shadowColor = '#facc15';
-        ctx.shadowBlur = 12;
         ctx.fill();
 
         ctx.beginPath();
@@ -2005,11 +1974,9 @@ export class IsometricRenderer {
         ctx.lineTo(5 * z, 3 * z);
         ctx.closePath();
         ctx.fillStyle = '#1e293b';
-        ctx.shadowColor = p.glowColor;
-        ctx.shadowBlur = 8;
         ctx.fill();
         ctx.strokeStyle = p.color;
-        ctx.lineWidth = 1.2 * z;
+        ctx.lineWidth = 1.5 * z;
         ctx.stroke();
 
         // 4. Warhead Neon Runic Stripe
@@ -2029,15 +1996,13 @@ export class IsometricRenderer {
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillStyle = '#fde047';
-        ctx.shadowColor = '#f59e0b';
-        ctx.shadowBlur = 14;
         ctx.fillText('ᛋ', 0, 0);
 
         // Acoustic Shockwave Rings
         ctx.beginPath();
         ctx.arc(0, 0, 8 * z, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
-        ctx.lineWidth = 1.5 * z;
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+        ctx.lineWidth = 1.8 * z;
         ctx.stroke();
         break;
 
@@ -2069,8 +2034,6 @@ export class IsometricRenderer {
         ctx.arc(0, 0, waveSpan, -waveAngle, waveAngle);
         ctx.strokeStyle = '#38bdf8';
         ctx.lineWidth = 5 * z;
-        ctx.shadowColor = '#0ea5e9';
-        ctx.shadowBlur = 16;
         ctx.stroke();
 
         // 3. Inner Blinding Golden/White Kinetic Core Arc
@@ -2078,8 +2041,6 @@ export class IsometricRenderer {
         ctx.arc(2 * z, 0, waveSpan * 0.88, -waveAngle * 0.85, waveAngle * 0.85);
         ctx.strokeStyle = '#fef08a';
         ctx.lineWidth = 2.5 * z;
-        ctx.shadowColor = '#facc15';
-        ctx.shadowBlur = 10;
         ctx.stroke();
 
         // 4. Kinetic Shield Chevron / Runic Weave in center
@@ -2117,12 +2078,10 @@ export class IsometricRenderer {
         ctx.lineTo(-12 * z, 2.5 * z);
         ctx.closePath();
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = p.glowColor || '#38bdf8';
-        ctx.shadowBlur = 14;
         ctx.fill();
 
         ctx.strokeStyle = p.color || '#38bdf8';
-        ctx.lineWidth = 1.8 * z;
+        ctx.lineWidth = 2.2 * z;
         ctx.stroke();
 
         // Ion propulsion trail
@@ -2140,12 +2099,10 @@ export class IsometricRenderer {
         ctx.beginPath();
         ctx.ellipse(0, 0, 6 * z, 2.5 * z, 0, 0, Math.PI * 2);
         ctx.fillStyle = '#ffffff';
-        ctx.shadowColor = p.glowColor || '#f97316';
-        ctx.shadowBlur = 10;
         ctx.fill();
 
         ctx.strokeStyle = p.color || '#f97316';
-        ctx.lineWidth = 1.4 * z;
+        ctx.lineWidth = 1.6 * z;
         ctx.stroke();
         break;
 
@@ -2159,9 +2116,10 @@ export class IsometricRenderer {
         ctx.lineTo(-8 * z, 3 * z);
         ctx.closePath();
         ctx.fillStyle = p.color;
-        ctx.shadowColor = p.glowColor;
-        ctx.shadowBlur = 10;
         ctx.fill();
+        ctx.strokeStyle = p.glowColor || '#ffffff';
+        ctx.lineWidth = 1.2 * z;
+        ctx.stroke();
         break;
     }
 
@@ -2485,74 +2443,10 @@ export class IsometricRenderer {
     ctx.fillStyle = isBoss ? 'rgba(0, 0, 0, 0.7)' : 'rgba(0, 0, 0, 0.5)';
     ctx.fill();
 
-    // 3. Special Procedural Black Mist Singularity Entity (Final Omega Form)
-    if (enemy.id.includes('void_mist') || enemy.type.includes('void_mist')) {
-      const now = performance.now() * 0.003;
-      const mistRadius = baseSize * 1.85;
-
-      // 1. Swirling Outer Void Distortion Aura
-      const grad = ctx.createRadialGradient(lungeX, heightOffset, mistRadius * 0.15, lungeX, heightOffset, mistRadius);
-      grad.addColorStop(0, 'rgba(10, 2, 18, 0.96)');
-      grad.addColorStop(0.35, 'rgba(88, 28, 135, 0.78)');
-      grad.addColorStop(0.7, 'rgba(192, 132, 252, 0.35)');
-      grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(lungeX, heightOffset, mistRadius, 0, Math.PI * 2);
-      ctx.fill();
-
-      // 2. Churning Dark Tendrils (Black Smoke / Void Mist Wisps)
-      const tendrilCount = 8;
-      for (let i = 0; i < tendrilCount; i++) {
-        const ang = (Math.PI * 2 / tendrilCount) * i + Math.sin(now * 1.5 + i) * 0.7 + enemy.spiralAngle * 0.3;
-        const dist = mistRadius * (0.55 + Math.sin(now * 2.5 + i * 1.7) * 0.35);
-        const tx = lungeX + Math.cos(ang) * dist;
-        const ty = heightOffset + Math.sin(ang) * dist * 0.65;
-        const puffR = baseSize * (0.5 + Math.cos(now * 2.0 + i) * 0.25);
-
-        ctx.beginPath();
-        ctx.arc(tx, ty, puffR, 0, Math.PI * 2);
-        ctx.fillStyle = i % 2 === 0 ? 'rgba(5, 2, 10, 0.9)' : 'rgba(126, 34, 206, 0.55)';
-        ctx.shadowColor = '#c084fc';
-        ctx.shadowBlur = 18;
-        ctx.fill();
-      }
-
-      // 3. Piercing Red / Cyan Cosmic Core Eyes
-      const eyePulse = Math.sin(now * 6.0) * 2.5 * z;
-      const eyeOffX = 26 * z;
-      const eyeY = heightOffset - 8 * z;
-
-      ctx.beginPath();
-      ctx.arc(lungeX - eyeOffX, eyeY, 8 * z + eyePulse, 0, Math.PI * 2);
-      ctx.fillStyle = '#ef4444';
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 22;
-      ctx.fill();
-
-      ctx.beginPath();
-      ctx.arc(lungeX + eyeOffX, eyeY, 8 * z + eyePulse, 0, Math.PI * 2);
-      ctx.fillStyle = '#ef4444';
-      ctx.shadowColor = '#ef4444';
-      ctx.shadowBlur = 22;
-      ctx.fill();
-
-      // Core Corrupted Magic Symbol Glyphs
-      ctx.font = `bold ${Math.floor(34 * z)}px serif`;
-      ctx.fillStyle = '#fde047';
-      ctx.shadowColor = '#f59e0b';
-      ctx.shadowBlur = 18;
-      ctx.textAlign = 'center';
-      ctx.fillText('⚡', lungeX, heightOffset + 12 * z);
-
-      ctx.restore();
-      return;
-    }
-
-    // 4. Resolve Enemy Transparent Sprite Key
+    // 3. Resolve Enemy Transparent Sprite Key
     let spriteKey = 'enemy_marauder';
     if (isBoss) {
-      if (enemy.id.includes('void_mist')) spriteKey = 'boss_tuoni';
+      if (enemy.id.includes('void_mist') || enemy.type.includes('void_mist')) spriteKey = 'boss_cosmic_horror';
       else if (enemy.id.includes('sotka')) spriteKey = 'boss_sotka';
       else if (enemy.id.includes('surma')) spriteKey = 'boss_surma';
       else if (enemy.id.includes('louhi')) spriteKey = 'boss_louhi';
@@ -2582,35 +2476,44 @@ export class IsometricRenderer {
     const spriteCanvas = this.transparentSprites.get(spriteKey) || AssetLoader.getTransparent(spriteKey) || this.imageCache.get(spriteKey) || AssetLoader.getImage(spriteKey) || AssetLoader.getTransparent('enemy_marauder');
 
     // 4. Render Special Boss / Underworld Auras
-    if (isBoss && enemy.id.includes('void_mist')) {
-      // Swirling singularity black hole & void event horizon aura beneath Surma-Musta
-      const vTime = performance.now() * 0.004;
+    if (isBoss && (enemy.id.includes('void_mist') || enemy.type.includes('void_mist'))) {
+      // Swirling singularity black hole accretion disk & cosmic event horizon aura beneath Surma-Musta
+      const vTime = performance.now() * 0.003;
+
+      // Accretion disk
+      const voidGrad = ctx.createRadialGradient(lungeX, heightOffset * 0.3, baseSize * 0.3, lungeX, heightOffset * 0.3, baseSize * 2.2);
+      voidGrad.addColorStop(0, 'rgba(15, 5, 29, 0.95)');
+      voidGrad.addColorStop(0.35, 'rgba(88, 28, 135, 0.65)');
+      voidGrad.addColorStop(0.7, 'rgba(225, 29, 72, 0.3)');
+      voidGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
       ctx.beginPath();
-      ctx.ellipse(0, 0, baseSize * 2.2, baseSize * 1.1, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(192, 132, 252, 0.25)';
-      ctx.shadowColor = '#c084fc';
-      ctx.shadowBlur = 24;
+      ctx.ellipse(lungeX, 0, baseSize * 2.2, baseSize * 1.1, 0, 0, Math.PI * 2);
+      ctx.fillStyle = voidGrad;
       ctx.fill();
 
-      // Cosmic event horizon ring
+      // Cosmic event horizon rotating rings
       ctx.beginPath();
-      ctx.ellipse(0, 0, baseSize * 1.6, baseSize * 0.8, vTime, 0, Math.PI * 2);
+      ctx.ellipse(lungeX, 0, baseSize * 1.65, baseSize * 0.82, vTime, 0, Math.PI * 2);
       ctx.strokeStyle = '#f43f5e';
-      ctx.lineWidth = 3 * z;
-      ctx.shadowColor = '#fb7185';
-      ctx.shadowBlur = 15;
+      ctx.lineWidth = 3.5 * z;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.ellipse(lungeX, 0, baseSize * 1.35, baseSize * 0.68, -vTime * 1.5, 0, Math.PI * 2);
+      ctx.strokeStyle = '#c084fc';
+      ctx.lineWidth = 2 * z;
       ctx.stroke();
 
       // Void reality-tearing tentacles
       for (let t = 0; t < 6; t++) {
         const ang = vTime * 2 + (t * Math.PI / 3);
-        const tLen = baseSize * (1.4 + Math.sin(vTime * 3 + t) * 0.35);
+        const tLen = baseSize * (1.35 + Math.sin(vTime * 3 + t) * 0.35);
         ctx.beginPath();
-        ctx.moveTo(0, heightOffset);
+        ctx.moveTo(lungeX, heightOffset);
         ctx.quadraticCurveTo(
-          Math.cos(ang) * tLen * 0.6,
-          heightOffset + Math.sin(ang) * tLen * 0.6 - 15 * z,
-          Math.cos(ang) * tLen,
+          lungeX + Math.cos(ang) * tLen * 0.6,
+          heightOffset + Math.sin(ang) * tLen * 0.6 - 12 * z,
+          lungeX + Math.cos(ang) * tLen,
           heightOffset + Math.sin(ang) * tLen
         );
         ctx.strokeStyle = t % 2 === 0 ? 'rgba(192, 132, 252, 0.85)' : 'rgba(244, 63, 94, 0.85)';
@@ -2621,25 +2524,21 @@ export class IsometricRenderer {
       // Swirling shadow vortex & ghostly Swan mist beneath Tuoni (Clean, no black wing artifacts)
       ctx.beginPath();
       ctx.ellipse(0, 0, baseSize * 1.6, baseSize * 0.8, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(6, 182, 212, 0.18)';
-      ctx.shadowColor = '#06b6d4';
-      ctx.shadowBlur = 16;
+      ctx.fillStyle = 'rgba(6, 182, 212, 0.22)';
       ctx.fill();
 
       // Outer Stygian Mist Ring
       ctx.beginPath();
       ctx.ellipse(0, 0, baseSize * 1.2, baseSize * 0.6, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(34, 211, 238, 0.35)';
-      ctx.lineWidth = 1.8 * z;
+      ctx.strokeStyle = 'rgba(34, 211, 238, 0.55)';
+      ctx.lineWidth = 2 * z;
       ctx.stroke();
     } else if (isBoss && (enemy.id.includes('ukko') || enemy.id.includes('sampo'))) {
       // Radiant Celestial Solar Corona & Orbiting Kirjokansi Light Rings
       const uTime = performance.now() * 0.003;
       ctx.beginPath();
       ctx.ellipse(0, 0, baseSize * 1.8, baseSize * 0.9, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(245, 158, 11, 0.20)';
-      ctx.shadowColor = '#fbbf24';
-      ctx.shadowBlur = 20;
+      ctx.fillStyle = 'rgba(245, 158, 11, 0.22)';
       ctx.fill();
 
       // Spinning Solar Arc Halo Ring
@@ -2647,8 +2546,6 @@ export class IsometricRenderer {
       ctx.ellipse(0, heightOffset - 18 * z, baseSize * 1.35, baseSize * 0.45, uTime * 0.5, 0, Math.PI * 2);
       ctx.strokeStyle = '#fde047';
       ctx.lineWidth = 3.0 * z;
-      ctx.shadowColor = '#facc15';
-      ctx.shadowBlur = 18;
       ctx.stroke();
 
       // 4 Orbiting Celestial Kirjokansi Prism Shards
@@ -2659,26 +2556,29 @@ export class IsometricRenderer {
         ctx.beginPath();
         ctx.arc(px, py, 7.0 * z, 0, Math.PI * 2);
         ctx.fillStyle = p % 2 === 0 ? '#38bdf8' : '#fbbf24';
-        ctx.shadowColor = '#ffffff';
-        ctx.shadowBlur = 14;
         ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.5 * z;
+        ctx.stroke();
       }
     } else if (enemy.type.includes('brood') || enemy.type.includes('matriarch') || enemy.type.includes('tulipesä')) {
       // Fiery volcanic magma aura beneath Broodmother Colossus
       ctx.beginPath();
       ctx.ellipse(0, heightOffset, baseSize * 1.3, baseSize * 0.7, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(234, 88, 12, 0.24)';
-      ctx.shadowColor = '#ea580c';
-      ctx.shadowBlur = 18;
+      ctx.fillStyle = 'rgba(234, 88, 12, 0.25)';
       ctx.fill();
+      ctx.strokeStyle = '#ea580c';
+      ctx.lineWidth = 1.5 * z;
+      ctx.stroke();
     } else if (enemy.type.includes('tuoni') || enemy.type.includes('wraith') || enemy.type.includes('necro')) {
       // Ghostly corpse aura for Tuonela enemies
       ctx.beginPath();
       ctx.ellipse(0, heightOffset, baseSize * 0.8, baseSize * 1.1, 0, 0, Math.PI * 2);
-      ctx.fillStyle = 'rgba(34, 211, 238, 0.12)';
-      ctx.shadowColor = '#22d3ee';
-      ctx.shadowBlur = 10;
+      ctx.fillStyle = 'rgba(34, 211, 238, 0.15)';
       ctx.fill();
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 1.2 * z;
+      ctx.stroke();
     }
 
     // 5. Render Transparent Cutout Sprite (NO BUBBLES, NO BLACK BOXES!)
@@ -2844,7 +2744,7 @@ export class IsometricRenderer {
     if (portalSprite) {
       if (gw.hurtFlashTimer > 0) {
         ctx.save();
-        ctx.filter = 'brightness(3.2) contrast(1.4) drop-shadow(0 0 14px rgba(255, 255, 255, 0.95)) drop-shadow(0 0 8px #f59e0b)';
+        ctx.filter = 'brightness(2.6) contrast(1.3)';
         ctx.drawImage(portalSprite, sx, sy, spriteSize, spriteSize);
         ctx.restore();
       } else {
