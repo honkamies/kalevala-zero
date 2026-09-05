@@ -1,0 +1,47 @@
+{
+  "name": "kalevala-zero",
+  "version": "1.0.0",
+  "description": "Kalevala Zero - Isometric Cyber-ARPG",
+  "main": "main.cjs",
+  "author": "Sampo Team",
+  "license": "MIT",
+  "scripts": {
+    "sync-dist": "rm -rf dist && cp -r ../client/dist ./dist",
+    "start": "npm run sync-dist && electron .",
+    "build:dir": "npm run sync-dist && electron-builder --win --dir --x64",
+    "build:zip": "npm run build:dir && cd release && python3 -m zipfile -c Kalevala-Zero-Windows-x64.zip win-unpacked",
+    "build:exe": "npm run sync-dist && electron-builder --win portable --x64",
+    "build:installer": "npm run sync-dist && electron-builder --win nsis --x64"
+  },
+  "build": {
+    "appId": "com.kalevala.zero",
+    "productName": "Kalevala Zero",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "main.cjs",
+      "dist/**/*"
+    ],
+    "win": {
+      "signAndEditExecutable": false,
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        },
+        {
+          "target": "zip",
+          "arch": ["x64"]
+        }
+      ]
+    },
+    "portable": {
+      "artifactName": "Kalevala-Zero-v${version}.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^31.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

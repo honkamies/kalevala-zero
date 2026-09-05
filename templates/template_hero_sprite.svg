@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <style>
+      .bg { fill: #07090e; }
+      .axis { stroke: #1e293b; stroke-width: 1; stroke-dasharray: 4,4; }
+      .char-circle { fill: none; stroke: #38bdf8; stroke-width: 1.5; stroke-dasharray: 6,4; }
+      .head-zone { fill: rgba(56, 189, 248, 0.08); stroke: #38bdf8; stroke-width: 1.5; }
+      .torso-zone { fill: rgba(245, 158, 11, 0.08); stroke: #f59e0b; stroke-width: 1.5; }
+      .shadow-ellipse { fill: rgba(0, 0, 0, 0.6); stroke: #64748b; stroke-width: 1.5; }
+      .label { font-family: 'Courier New', monospace; font-size: 13px; fill: #94a3b8; }
+      .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #f59e0b; }
+      .subtext { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; fill: #64748b; }
+      .rule { stroke: #ec4899; stroke-width: 1.2; stroke-dasharray: 4,2; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" class="bg" />
+
+  <!-- Header -->
+  <text x="256" y="38" text-anchor="middle" class="title">SAMPO-ZERO // HERO SPRITE TEMPLATE (512x512)</text>
+  <text x="256" y="58" text-anchor="middle" class="subtext">Auto-Chroma-Key: Pure Black (#000000) Background will be automatically transparent in-game</text>
+
+  <!-- Axes -->
+  <line x1="256" y1="70" x2="256" y2="470" class="axis" />
+  <line x1="40" y1="410" x2="472" y2="410" class="axis" />
+
+  <!-- Ground Shadow Anchor (Feet contact point at x=256, y=410) -->
+  <ellipse cx="256" cy="410" rx="90" ry="32" class="shadow-ellipse" />
+  <text x="256" y="415" text-anchor="middle" class="label" fill="#cbd5e1">FEET / GROUND CONTACT (0, 0)</text>
+
+  <!-- Character Silhouette Envelope -->
+  <circle cx="256" cy="260" r="160" class="char-circle" />
+
+  <!-- Head Zone -->
+  <circle cx="256" cy="160" r="45" class="head-zone" />
+  <text x="256" y="165" text-anchor="middle" class="label" fill="#38bdf8">HEAD / HELMET</text>
+
+  <!-- Torso & Weapon Zone -->
+  <rect x="180" y="210" width="152" height="130" rx="12" class="torso-zone" />
+  <text x="256" y="275" text-anchor="middle" class="label" fill="#f59e0b">TORSO & ARMOR</text>
+
+  <!-- Weapon / Shield Reach Margins -->
+  <line x1="70" y1="260" x2="180" y2="260" class="rule" />
+  <text x="125" y="250" text-anchor="middle" class="label" fill="#ec4899">Weapon Left</text>
+
+  <line x1="332" y1="260" x2="442" y2="260" class="rule" />
+  <text x="387" y="250" text-anchor="middle" class="label" fill="#ec4899">Weapon Right</text>
+
+  <!-- Feet Line -->
+  <line x1="160" y1="390" x2="352" y2="390" stroke="#10b981" stroke-width="1.5" stroke-dasharray="4,4" />
+  <text x="256" y="380" text-anchor="middle" class="label" fill="#10b981">Legs & Boots</text>
+
+  <!-- Footer Info -->
+  <text x="256" y="480" text-anchor="middle" class="subtext">Save as .jpg (black bg) or transparent .png to client/public/assets/hero_[name].jpg</text>
+</svg>

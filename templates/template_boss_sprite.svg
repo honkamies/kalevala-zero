@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <style>
+      .bg { fill: #07090e; }
+      .axis { stroke: #1e293b; stroke-width: 1.5; stroke-dasharray: 6,6; }
+      .boss-circle { fill: none; stroke: #ef4444; stroke-width: 2; stroke-dasharray: 8,6; }
+      .core-zone { fill: rgba(239, 68, 68, 0.08); stroke: #ef4444; stroke-width: 2; }
+      .wing-zone { fill: rgba(168, 85, 247, 0.08); stroke: #a855f7; stroke-width: 1.5; stroke-dasharray: 6,4; }
+      .shadow-ellipse { fill: rgba(0, 0, 0, 0.7); stroke: #475569; stroke-width: 2; }
+      .label { font-family: 'Courier New', monospace; font-size: 20px; fill: #cbd5e1; font-weight: bold; }
+      .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 32px; font-weight: bold; fill: #ef4444; }
+      .subtext { font-family: 'Segoe UI', Arial, sans-serif; font-size: 18px; fill: #94a3b8; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" class="bg" />
+
+  <!-- Header -->
+  <text x="512" y="65" text-anchor="middle" class="title">SAMPO-ZERO // BOSS SPRITE TEMPLATE (1024x1024)</text>
+  <text x="512" y="100" text-anchor="middle" class="subtext">Auto-Chroma-Key Transparency: Black (#000000) background is keyed out automatically</text>
+
+  <!-- Axes -->
+  <line x1="512" y1="120" x2="512" y2="950" class="axis" />
+  <line x1="60" y1="840" x2="964" y2="840" class="axis" />
+
+  <!-- Ground Shadow Anchor -->
+  <ellipse cx="512" cy="840" rx="280" ry="90" class="shadow-ellipse" />
+  <text x="512" y="850" text-anchor="middle" class="label" fill="#f87171">BOSS GROUND CONTACT / SHADOW ORIGIN (0, 0)</text>
+
+  <!-- Wing / Silhouette Envelopes -->
+  <ellipse cx="280" cy="500" rx="200" ry="240" class="wing-zone" />
+  <text x="280" y="500" text-anchor="middle" class="label" fill="#c084fc">LEFT WING / SCYTHE</text>
+
+  <ellipse cx="744" cy="500" rx="200" ry="240" class="wing-zone" />
+  <text x="744" y="500" text-anchor="middle" class="label" fill="#c084fc">RIGHT WING / WEAPON</text>
+
+  <!-- Main Body / Torso Core -->
+  <rect x="362" y="260" width="300" height="520" rx="40" class="core-zone" />
+  <text x="512" y="440" text-anchor="middle" class="label" fill="#ef4444">BOSS CORE BODY</text>
+
+  <!-- Head / Crown Zone -->
+  <circle cx="512" cy="280" r="100" fill="rgba(245, 158, 11, 0.12)" stroke="#f59e0b" stroke-width="2" />
+  <text x="512" y="285" text-anchor="middle" class="label" fill="#f59e0b">HEAD / HOOD / MASK</text>
+
+  <!-- Outer Boundary -->
+  <circle cx="512" cy="520" r="420" class="boss-circle" />
+
+  <!-- Footer -->
+  <text x="512" y="970" text-anchor="middle" class="subtext">Save to client/public/assets/boss_[name].jpg or transparent .png</text>
+</svg>

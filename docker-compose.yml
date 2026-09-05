@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: sampo_proxy
+    restart: unless-stopped
+    ports:
+      - "8088:80"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - ./client/dist:/srv
+    depends_on:
+      - server
+
+  server:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    container_name: sampo_server
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - PORT=3000
+      - DATABASE_URL=postgres://sampo_user:sampo_secret@postgres:5432/sampo_zero
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=sampo_kalevala_cyber_secret_key_2026
+    depends_on:
+      - postgres
+      - redis
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: sampo_postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=sampo_user
+      - POSTGRES_PASSWORD=sampo_secret
+      - POSTGRES_DB=sampo_zero
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: sampo_redis
+    restart: unless-stopped
+    volumes:
+      - redisdata:/data
+
+volumes:
+  pgdata:
+  redisdata:

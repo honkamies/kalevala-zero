@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <style>
+      .bg { fill: #07090e; }
+      .grid-line { stroke: #1e293b; stroke-width: 1; stroke-dasharray: 4,4; }
+      .iso-diamond { fill: #0f172a; stroke: #38bdf8; stroke-width: 2; }
+      .center-mark { stroke: #f59e0b; stroke-width: 2; }
+      .label { font-family: 'Courier New', monospace; font-size: 14px; fill: #94a3b8; }
+      .title { font-family: 'Segoe UI', Arial, sans-serif; font-size: 20px; font-weight: bold; fill: #f59e0b; }
+      .subtext { font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; fill: #64748b; }
+      .height-guide { stroke: #ec4899; stroke-width: 1.5; stroke-dasharray: 6,3; }
+    </style>
+  </defs>
+
+  <!-- Background -->
+  <rect width="512" height="512" class="bg" />
+
+  <!-- Header -->
+  <text x="256" y="40" text-anchor="middle" class="title">SAMPO-ZERO // ISOMETRIC TILE TEMPLATE</text>
+  <text x="256" y="62" text-anchor="middle" class="subtext">2:1 Isometric Ratio (Floor Diamond Base: 64x32px Scaled 4x for High-Res 256x128px)</text>
+
+  <!-- Height Clearance Guides -->
+  <line x1="64" y1="180" x2="448" y2="180" class="height-guide" />
+  <text x="70" y="174" class="label" fill="#ec4899">Tall Tree / Spire Peak (~200px Height)</text>
+
+  <line x1="64" y1="260" x2="448" y2="260" class="height-guide" />
+  <text x="70" y="254" class="label" fill="#ec4899">Medium Wall / Boulder Peak (~100px Height)</text>
+
+  <!-- Center Axis -->
+  <line x1="256" y1="80" x2="256" y2="460" class="grid-line" />
+  <line x1="40" y1="360" x2="472" y2="360" class="grid-line" />
+
+  <!-- 2:1 Isometric Base Diamond (Centered at x=256, y=360) -->
+  <!-- Width: 256px (x from 128 to 384), Height: 128px (y from 296 to 424) -->
+  <polygon points="256,296 384,360 256,424 128,360" class="iso-diamond" />
+
+  <!-- Ground Shadow Ellipse Base -->
+  <ellipse cx="256" cy="360" rx="100" ry="45" fill="none" stroke="#64748b" stroke-width="1.5" stroke-dasharray="4,4" />
+  <text x="256" y="365" text-anchor="middle" class="label" fill="#64748b">Ground Contact Center (0, 0)</text>
+
+  <!-- Diamond Corner Coordinates -->
+  <circle cx="256" cy="296" r="4" fill="#38bdf8" />
+  <text x="256" y="286" text-anchor="middle" class="label">Top (0, -halfH)</text>
+
+  <circle cx="384" cy="360" r="4" fill="#38bdf8" />
+  <text x="394" y="364" class="label">+halfW</text>
+
+  <circle cx="256" cy="424" r="4" fill="#38bdf8" />
+  <text x="256" y="444" text-anchor="middle" class="label">Bottom (0, +halfH)</text>
+
+  <circle cx="128" cy="360" r="4" fill="#38bdf8" />
+  <text x="70" y="364" class="label">-halfW</text>
+
+  <!-- Center Marker -->
+  <circle cx="256" cy="360" r="5" class="center-mark" fill="#f59e0b" />
+
+  <!-- Footer Instructions -->
+  <text x="256" y="480" text-anchor="middle" class="subtext">Export as transparent PNG or save asset directly to /client/public/assets/</text>
+</svg>

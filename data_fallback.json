@@ -1,0 +1,112 @@
+{
+  "users": [
+    {
+      "id": "usr_er9jwe79g",
+      "username": "Ilmarinen",
+      "password_hash": "$2a$10$oaIRcZWY9d6E7m.Ee4gyBeKCM9Be4jfEuhEMPYFaLPm7whCeZcy2K",
+      "created_at": "2026-08-18T08:32:21.518Z"
+    }
+  ],
+  "characters": [
+    {
+      "id": "chr_tt6o48ewk",
+      "user_id": "usr_er9jwe79g",
+      "name": "Seppä-Prime",
+      "level": 1,
+      "xp": 0,
+      "stats": {
+        "vaki": 10,
+        "sisu": 10,
+        "nokkela": 10,
+        "tieto": 10,
+        "statPoints": 0
+      },
+      "appearance": {
+        "phenotype": "cyber_runic",
+        "hairStyle": "cyber_braids",
+        "hairColor": "#38bdf8",
+        "skinTone": "#94a3b8",
+        "warPaint": "ukko_spark",
+        "implant": "neural_loom",
+        "archetype": "runoseppä"
+      },
+      "inventory": [
+        {
+          "id": "pot_nano_repair_1",
+          "name": "Nano-Repair Injector",
+          "type": "consumable",
+          "rarity": "common",
+          "quantity": 3,
+          "healAmount": 50,
+          "description": "Nanites rapidly stitch flesh and cyber-implants, restoring 50 HP.",
+          "icon": "activity"
+        },
+        {
+          "id": "shard_frost_1",
+          "name": "Pohjola Cryo-Shard",
+          "type": "socket_gem",
+          "element": "frost",
+          "rarity": "augmented",
+          "bonus": "+15 Frost Dmg & 20% Chill Chance",
+          "description": "Fractured shard from Pohjola deep freeze. Can be socketed into weapons.",
+          "icon": "snowflake"
+        }
+      ],
+      "equipment": {
+        "mainHand": {
+          "id": "wpn_forge_hammer_1",
+          "name": "Overclocked Forge Mallet",
+          "slot": "mainHand",
+          "rarity": "augmented",
+          "damage": 22,
+          "damageType": "shock",
+          "affixes": [
+            "Conductive Coil (+4 Shock Dmg)",
+            "Reinforced Grip (+2 Sisu)"
+          ],
+          "sockets": [
+            {
+              "type": "shock",
+              "filled": true,
+              "bonus": "+15% Shock Proc"
+            },
+            {
+              "type": "empty"
+            }
+          ],
+          "icon": "hammer"
+        },
+        "chest": {
+          "id": "arm_smith_cuirass_1",
+          "name": "Slag-Hardened Carapace",
+          "slot": "chest",
+          "rarity": "common",
+          "armor": 14,
+          "affixes": [
+            "Heat Shield (+5 Fire Res)"
+          ],
+          "sockets": [],
+          "icon": "shield"
+        }
+      },
+      "created_at": "2026-08-18T08:32:24.716Z",
+      "updated_at": "2026-08-18T08:32:24.716Z"
+    }
+  ],
+  "worldMaps": [
+    {
+      "id": "wm_xdnbclhv5",
+      "character_id": "chr_tt6o48ewk",
+      "sector_name": "pohjola",
+      "seed": 2129333032,
+      "cleared": false,
+      "discovered_chests": [],
+      "state_payload": {
+        "discoveredPuzzles": [],
+        "slainEnemiesCount": 0
+      },
+      "created_at": "2026-08-18T08:32:27.751Z",
+      "updated_at": "2026-08-18T08:32:27.751Z"
+    }
+  ]
+}
