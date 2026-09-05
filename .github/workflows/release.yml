@@ -1,0 +1,43 @@
+name: Build & Release Windows Executable
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Codebase
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Client & Build Web Assets
+        run: |
+          cd client
+          npm ci
+          npm run build
+
+      - name: Install Desktop & Package Windows Portable EXE
+        run: |
+          cd desktop
+          npm ci
+          npm run build:exe
+
+      - name: Create GitHub Release & Upload Windows EXE
+        uses: softprops/action-gh-release@v2
+        with:
+          files: desktop/release/Kalevala-Zero-*.exe
+          name: Kalevala Zero ${{ github.ref_name }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true

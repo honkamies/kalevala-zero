@@ -8,10 +8,10 @@
   "scripts": {
     "sync-dist": "rm -rf dist && cp -r ../client/dist ./dist",
     "start": "npm run sync-dist && electron .",
-    "build:dir": "npm run sync-dist && electron-builder --win --dir --x64",
+    "build:dir": "npm run sync-dist && LANG=C.UTF-8 LC_ALL=C.UTF-8 electron-builder --win --dir --x64",
     "build:zip": "npm run build:dir && cd release && python3 -m zipfile -c Kalevala-Zero-Windows-x64.zip win-unpacked",
-    "build:exe": "npm run sync-dist && electron-builder --win portable --x64",
-    "build:installer": "npm run sync-dist && electron-builder --win nsis --x64"
+    "build:exe": "npm run sync-dist && LANG=C.UTF-8 LC_ALL=C.UTF-8 electron-builder --win portable --x64",
+    "build:installer": "npm run sync-dist && LANG=C.UTF-8 LC_ALL=C.UTF-8 electron-builder --win nsis --x64"
   },
   "build": {
     "appId": "com.kalevala.zero",

@@ -1,0 +1,12 @@
+{
+  "name": "kalevala-zero",
+  "version": "1.0.0",
+  "description": "Kalevala-Zero: Cyber-Kalevala Isometric ARPG",
+  "private": true,
+  "scripts": {
+    "build": "cd client && npm run build && cd ../desktop && npm run sync-dist",
+    "build:exe": "cd desktop && npm run build:exe",
+    "release": "bash scripts/release.sh",
+    "dev": "cd client && npm run dev"
+  }
+}
