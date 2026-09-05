@@ -1,7 +1,7 @@
 {
-  "name": "sampo-server",
+  "name": "kalevala-zero-server",
   "version": "1.0.0",
-  "description": "Backend game server for Project Sampo-Zero: Cyber-Kalevala ARPG",
+  "description": "Backend game server for Kalevala-Zero: Cyber-Kalevala ARPG",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",

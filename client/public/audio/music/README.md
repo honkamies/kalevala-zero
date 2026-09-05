@@ -1,6 +1,6 @@
 # Custom Background Music & Ambient Loops
 
-This directory holds the background music tracks and atmospheric loops for **Sampo-Zero**.
+This directory holds the background music tracks and atmospheric loops for **Kalevala-Zero**.
 
 ## Supported Audio Formats
 * `.ogg` (Recommended for high compression & fidelity in modern web browsers)

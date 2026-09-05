@@ -17,7 +17,7 @@
   <rect width="1024" height="1024" class="bg" />
 
   <!-- Header -->
-  <text x="512" y="65" text-anchor="middle" class="title">SAMPO-ZERO // BOSS SPRITE TEMPLATE (1024x1024)</text>
+  <text x="512" y="65" text-anchor="middle" class="title">KALEVALA-ZERO // BOSS SPRITE TEMPLATE (1024x1024)</text>
   <text x="512" y="100" text-anchor="middle" class="subtext">Auto-Chroma-Key Transparency: Black (#000000) background is keyed out automatically</text>
 
   <!-- Axes -->

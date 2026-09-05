@@ -28,7 +28,7 @@ async function bootstrap() {
   app.get('/health', (req, res) => {
     res.json({
       status: 'online',
-      project: 'Sampo-Zero: Cyber-Kalevala ARPG',
+      project: 'Kalevala-Zero: Cyber-Kalevala ARPG',
       version: '1.0.0',
       time: new Date().toISOString()
     });
@@ -48,7 +48,7 @@ async function bootstrap() {
 
   server.listen(PORT, '0.0.0.0', () => {
     console.log(`====================================================`);
-    console.log(`🔥 SAMPO-ZERO SERVER RUNNING ON PORT: ${PORT}`);
+    console.log(`🔥 KALEVALA-ZERO SERVER RUNNING ON PORT: ${PORT}`);
     console.log(`📡 WebSocket endpoint ready at ws://0.0.0.0:${PORT}/ws`);
     console.log(`⚔️  Kalevala Cyber-Forge Engine Initialized`);
     console.log(`====================================================`);

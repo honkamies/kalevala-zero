@@ -118,8 +118,8 @@ export class MainMenuUI {
       <!-- TOP GRAND LOGO (Matched width to carousel image) -->
       <div class="carousel-menu-header">
         <div class="carousel-brand centered">
-          <h1 class="main-page-grand-logo">SAMPO-ZERO</h1>
-          <div class="main-page-grand-sub">ᛋᚨᛗᛈᛟ // CYBER-KALEVALA REALM ODYSSEY</div>
+          <h1 class="main-page-grand-logo">KALEVALA-ZERO</h1>
+          <div class="main-page-grand-sub">ᚲᚨᛚᛖᚡᚨᛚᚨ // CYBER-KALEVALA REALM ODYSSEY</div>
         </div>
       </div>
 

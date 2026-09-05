@@ -18,7 +18,7 @@
   <rect width="512" height="512" class="bg" />
 
   <!-- Header -->
-  <text x="256" y="38" text-anchor="middle" class="title">SAMPO-ZERO // HERO SPRITE TEMPLATE (512x512)</text>
+  <text x="256" y="38" text-anchor="middle" class="title">KALEVALA-ZERO // HERO SPRITE TEMPLATE (512x512)</text>
   <text x="256" y="58" text-anchor="middle" class="subtext">Auto-Chroma-Key: Pure Black (#000000) Background will be automatically transparent in-game</text>
 
   <!-- Axes -->

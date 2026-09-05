@@ -1,6 +1,6 @@
-# 🎨 SAMPO-ZERO: Graphics & Custom Asset Creation Guide
+# 🎨 KALEVALA-ZERO: Graphics & Custom Asset Creation Guide
 
-This guide explains how to create, edit, replace, or customize any graphic, sprite, tile, or background in **Sampo-Zero**.
+This guide explains how to create, edit, replace, or customize any graphic, sprite, tile, or background in **Kalevala-Zero**.
 
 ---
 

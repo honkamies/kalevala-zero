@@ -1,8 +1,8 @@
-# SAMPO-ZERO: Cyber-Kalevala Isometric ARPG
+# KALEVALA-ZERO: Cyber-Kalevala Isometric ARPG
 
 > *"Centuries after the catastrophic meltdown and shattering of the Sampo—a mythic autonomous fusion-forge and matter synthesizer—the Northern wasteland lies fractured. Runic verses (*runolaulut*) are discovered to be corrupted low-level machine execution protocols, while mythical beasts roam as rogue biomechanical monstrosities."*
 
-**Sampo-Zero** is a dark isometric Action RPG / Dungeon Crawler combining Finnish mythic folklore (*Kalevala* & *Kanteletar*) with post-apocalyptic sci-fi wasteland aesthetics.
+**Kalevala-Zero** is a dark isometric Action RPG / Dungeon Crawler combining Finnish mythic folklore (*Kalevala* & *Kanteletar*) with post-apocalyptic sci-fi wasteland aesthetics.
 
 ---
 

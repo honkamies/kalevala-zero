@@ -81,7 +81,7 @@ export class PauseMenuUI {
               </span>
             </div>
             <div style="font-size:12px; color:var(--text-muted); margin-top:2px;">
-              ${biome ? `Current Sector: <strong style="color:#fff;">${biome.name}</strong> (${biome.finnishTitle})` : 'Sampo-Zero: Cyber-Kalevala ARPG'}
+              ${biome ? `Current Sector: <strong style="color:#fff;">${biome.name}</strong> (${biome.finnishTitle})` : 'Kalevala-Zero: Cyber-Kalevala ARPG'}
             </div>
           </div>
 

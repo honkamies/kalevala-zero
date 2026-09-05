@@ -16,7 +16,7 @@
   <rect width="512" height="512" class="bg" />
 
   <!-- Header -->
-  <text x="256" y="40" text-anchor="middle" class="title">SAMPO-ZERO // ISOMETRIC TILE TEMPLATE</text>
+  <text x="256" y="40" text-anchor="middle" class="title">KALEVALA-ZERO // ISOMETRIC TILE TEMPLATE</text>
   <text x="256" y="62" text-anchor="middle" class="subtext">2:1 Isometric Ratio (Floor Diamond Base: 64x32px Scaled 4x for High-Res 256x128px)</text>
 
   <!-- Height Clearance Guides -->
