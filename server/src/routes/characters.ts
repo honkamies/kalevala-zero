@@ -33,10 +33,10 @@ router.post('/', async (req: AuthRequest, res) => {
 
     // Default base stats if not provided
     const baseStats = stats || {
-      vaki: 10,
-      sisu: 10,
-      nokkela: 10,
-      tieto: 10,
+      vaki: 8,
+      sisu: 8,
+      nokkela: 8,
+      tieto: 8,
       statPoints: 0
     };
 

@@ -180,7 +180,7 @@ export class MainMenuUI {
               <span class="operative-archetype">${this.player ? this.player.appearance.archetype.toUpperCase() : 'SOTURI'}</span>
             </div>
             <div class="operative-resources">
-              <span>⚡ ${this.player ? this.player.naniteScrap : 150} SCRAP</span>
+              <span>⚡ ${this.player ? this.player.naniteScrap : 0} SCRAP</span>
               <span>•</span>
               <span>${totalCleared}/6 REALMS</span>
               <span>•</span>

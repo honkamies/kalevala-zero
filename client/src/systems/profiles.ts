@@ -37,14 +37,14 @@ export const LEGACY_SECTOR_CLEARS_KEY = 'sampo_sector_clears';
 export function getDefaultStatsForArchetype(archetype: string): PlayerStats {
   switch (archetype) {
     case 'soturi':
-      return { sisu: 16, nokkela: 7, vaki: 8, tieto: 9, statPoints: 0 };
+      return { sisu: 12, nokkela: 6, vaki: 6, tieto: 6, statPoints: 0 };
     case 'korvenraivaaja':
-      return { sisu: 7, nokkela: 16, vaki: 9, tieto: 8, statPoints: 0 };
+      return { sisu: 6, nokkela: 12, vaki: 6, tieto: 6, statPoints: 0 };
     case 'tietäjä':
-      return { sisu: 8, nokkela: 8, vaki: 16, tieto: 13, statPoints: 0 };
+      return { sisu: 6, nokkela: 6, vaki: 12, tieto: 8, statPoints: 0 };
     case 'runoseppä':
     default:
-      return { sisu: 11, nokkela: 8, vaki: 12, tieto: 15, statPoints: 0 };
+      return { sisu: 7, nokkela: 6, vaki: 8, tieto: 11, statPoints: 0 };
   }
 }
 
@@ -57,7 +57,7 @@ export function createDefaultPlayerData(id: string, name: string, appearance: Ch
     stats: getDefaultStatsForArchetype(appearance.archetype),
     level: 1,
     xp: 0,
-    naniteScrap: 150,
+    naniteScrap: 0,
     inventory: [],
     equipment: {},
     baseWeapon: starterWeapon
@@ -91,7 +91,7 @@ export function playerFromProfileData(data: ProfilePlayerData): Player {
   const p = new Player(data.id, data.name, data.appearance, data.stats, data.inventory, equipment, baseWpn);
   p.level = data.level || 1;
   p.xp = data.xp || 0;
-  p.naniteScrap = data.naniteScrap !== undefined ? data.naniteScrap : 150;
+  p.naniteScrap = data.naniteScrap !== undefined ? data.naniteScrap : 0;
   p.recalculateDerivedStats();
   p.health = p.maxHealth;
   p.shield = p.maxShield;
@@ -226,7 +226,7 @@ export class ProfileManager {
           stats: legacyPlayer.stats || getDefaultStatsForArchetype(archetype),
           level: legacyPlayer.level || 1,
           xp: legacyPlayer.xp || 0,
-          naniteScrap: legacyPlayer.naniteScrap !== undefined ? legacyPlayer.naniteScrap : 150,
+          naniteScrap: legacyPlayer.naniteScrap !== undefined ? legacyPlayer.naniteScrap : 0,
           inventory: legacyPlayer.inventory || [],
           equipment: legacyPlayer.equipment || {}
         },

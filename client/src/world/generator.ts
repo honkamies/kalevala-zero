@@ -323,12 +323,13 @@ export class DungeonGenerator {
         tiles[safeTile.y][safeTile.x] = TileType.SHRINE;
       }
 
-      if (r.type === 'loot' || (r.type !== 'boss' && rng() > 0.40)) {
+      // Chests are placed in dedicated loot chambers, or rarely in elite rooms (tuning down excessive loot)
+      if (r.type === 'loot' || (r.type === 'elite' && rng() > 0.70)) {
         const chestTile = this.findSafeFloorTileInRoom(tiles, r, width, height, 2);
         chestPoints.push({
           x: chestTile.x,
           y: chestTile.y,
-          isLocked: false
+          isLocked: r.type === 'elite'
         });
       }
 

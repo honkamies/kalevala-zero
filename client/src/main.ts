@@ -232,7 +232,7 @@ export class SampoGame {
     this.inventoryUI = new InventoryUI(this.uiRoot, () => this.onPlayerStateChanged());
     this.characterSheetUI = new CharacterSheetUI(this.uiRoot, () => this.onPlayerStateChanged());
     this.puzzleUI = new PuzzleUI(this.uiRoot);
-    this.shopCraftUI = new ShopCraftUI(this.uiRoot, () => this.onPlayerStateChanged());
+    this.shopCraftUI = new ShopCraftUI(this.uiRoot, () => this.onPlayerStateChanged(), () => this.currentSectorId);
     this.chestLockUI = new ChestLockUI(this.uiRoot);
 
     this.platformerMode = new PlatformerMode(
@@ -1131,12 +1131,12 @@ export class SampoGame {
     const loop = this.getSectorLoop(this.currentSectorId);
     const xpMult = 1.0 + (loop * 0.25);
     const scrapMult = (1.0 + (loop * 0.30)) * (this.player.appearance.archetype === 'runoseppä' ? 1.35 : 1.0);
-    const xpGained = Math.round((150 + this.player.level * 20) * xpMult);
-    const scrapGained = Math.round(25 * scrapMult);
+    const xpGained = Math.round((60 + this.player.level * 10) * xpMult);
+    const scrapGained = Math.round(8 * scrapMult);
     const prevLvl = this.player.level;
     this.player.gainXP(xpGained);
     if (this.player.level > prevLvl) {
-      this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+3 Stat Points)`, 'level');
+      this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+1 Stat Point)`, 'level');
     }
     this.player.naniteScrap += scrapGained;
     this.hud.addLog(`★ VOID RIFT DESTROYED: ${gw.name}! (+${xpGained} XP, +${scrapGained} Scrap)`, 'level');
@@ -1156,18 +1156,18 @@ export class SampoGame {
     const xpMult = 1.0 + (loop * 0.25);
     const scrapMult = (1.0 + (loop * 0.30)) * (this.player.appearance.archetype === 'runoseppä' ? 1.35 : 1.0);
 
-    // XP Reward scaled with Loop Multiplier
-    const baseXP = e.isBoss ? 800 : e.isElite ? 150 : 45;
+    // XP Reward scaled with Loop Multiplier - tuned down progression
+    const baseXP = e.isBoss ? 350 : e.isElite ? 75 : 20;
     const xpGained = Math.round(baseXP * xpMult);
     const prevLevel = this.player.level;
     this.player.gainXP(xpGained);
 
     if (this.player.level > prevLevel) {
-      this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+3 Stat Points)`, 'level');
+      this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+1 Stat Point)`, 'level');
     }
 
-    // Nanite Scrap scaled with Loop Multiplier & Runoseppä Transmutation
-    const baseScrap = e.isBoss ? 150 : e.isElite ? 35 : 10;
+    // Nanite Scrap scaled with Loop Multiplier & Runoseppä Transmutation - tuned down to make upgrades rare
+    const baseScrap = e.isBoss ? 45 : e.isElite ? 10 : 3;
     const scrapGained = Math.round(baseScrap * scrapMult);
     this.player.naniteScrap += scrapGained;
 
@@ -1373,7 +1373,7 @@ export class SampoGame {
       this.hud.addLog(`Acquired: ${item.name} [${item.rarity.toUpperCase()}]`, 'loot');
     } else {
       // Auto-Salvage Recycling Overflow
-      let scrapValue = item.naniteValue || (25 * (item.level || 1));
+      let scrapValue = item.naniteValue || (6 * (item.level || 1));
       if (this.player.appearance.archetype === 'runoseppä') {
         scrapValue = Math.round(scrapValue * 1.35);
       }
@@ -1975,53 +1975,53 @@ export class SampoGame {
       <div style="
         background: linear-gradient(180deg, rgba(22, 6, 10, 0.97) 0%, rgba(12, 3, 5, 0.98) 100%);
         border: 1.5px solid rgba(239, 68, 68, 0.7);
-        border-radius: 10px;
-        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(239, 68, 68, 0.35);
-        max-width: 380px;
-        width: 90%;
-        padding: 20px 22px;
+        border-radius: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(239, 68, 68, 0.3);
+        max-width: 290px;
+        width: 88%;
+        padding: 14px 16px;
         text-align: center;
         position: relative;
-        animation: fadeIn 0.3s ease-out;
+        animation: fadeIn 0.25s ease-out;
         pointer-events: auto;
       ">
         <!-- Close [X] Button -->
         <button id="btn-defeat-close-x" title="Close Window (ESC)" style="
           position: absolute;
-          top: 10px;
-          right: 14px;
+          top: 8px;
+          right: 10px;
           background: none;
           border: none;
           color: #f87171;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 300;
           cursor: pointer;
-          padding: 2px 6px;
+          padding: 2px 4px;
           line-height: 1;
           transition: color 0.15s;
         ">&times;</button>
 
-        <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2.5px; color: #f87171; margin-bottom: 4px;">
+        <div style="font-size: 9px; font-family: var(--font-mono); letter-spacing: 1.5px; color: #f87171; margin-bottom: 2px;">
           ⚠️ VESSEL COLLAPSED
         </div>
-        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); margin-bottom: 12px;">
+        <div style="font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); margin-bottom: 8px;">
           ${this.player ? this.player.name.toUpperCase() : 'OPERATIVE'} FALLEN
         </div>
 
         <!-- Combat Autopsy Line -->
         <div style="
           background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.3);
-          border-radius: 6px;
-          padding: 10px 14px;
-          margin-bottom: 12px;
+          border: 1px solid rgba(239, 68, 68, 0.25);
+          border-radius: 5px;
+          padding: 6px 10px;
+          margin-bottom: 8px;
           text-align: left;
-          font-size: 13px;
+          font-size: 11px;
         ">
           <div style="color: #f1f5f9; font-weight: 700;">
             Slain by <span style="color: #fca5a5;">${fatal.killerName}</span>
           </div>
-          <div style="font-size: 11px; font-family: var(--font-mono); color: #94a3b8; margin-top: 3px;">
+          <div style="font-size: 10px; font-family: var(--font-mono); color: #94a3b8; margin-top: 2px;">
             Fatal Hit: <strong style="color: #ffffff;">-${fatal.amount}</strong> <span style="color: ${typeColor}; font-weight: 700;">[${dmgTypeStr}]</span> &bull; ${currentBiome.name}
           </div>
         </div>
@@ -2032,23 +2032,23 @@ export class SampoGame {
           justify-content: space-around;
           background: rgba(0, 0, 0, 0.45);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 6px;
-          padding: 8px 10px;
-          margin-bottom: 16px;
+          border-radius: 5px;
+          padding: 5px 8px;
+          margin-bottom: 12px;
           font-family: var(--font-mono);
-          font-size: 11px;
+          font-size: 10px;
         ">
-          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 13px;">${this.player ? this.player.level : 1}</strong></div>
-          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 13px;">${this.kills}</strong></div>
-          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 13px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
+          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 11px;">${this.player ? this.player.level : 1}</strong></div>
+          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 11px;">${this.kills}</strong></div>
+          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 11px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 8px; justify-content: center;">
-          <button id="btn-defeat-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+        <div style="display: flex; gap: 6px; justify-content: center;">
+          <button id="btn-defeat-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 10px rgba(239, 68, 68, 0.35); padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
             🔄 RETRY
           </button>
-          <button id="btn-defeat-menu" class="sampo-btn" style="padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+          <button id="btn-defeat-menu" class="sampo-btn" style="padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
             🚀 SAGA COMMAND
           </button>
         </div>
@@ -2137,39 +2137,39 @@ export class SampoGame {
       <div style="
         background: linear-gradient(180deg, rgba(24, 8, 12, 0.97) 0%, rgba(12, 3, 5, 0.98) 100%);
         border: 1.5px solid rgba(239, 68, 68, 0.7);
-        border-radius: 10px;
-        box-shadow: 0 8px 36px rgba(0, 0, 0, 0.8), 0 0 20px rgba(239, 68, 68, 0.35);
-        max-width: 380px;
-        width: 90%;
-        padding: 20px 22px;
+        border-radius: 8px;
+        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(239, 68, 68, 0.3);
+        max-width: 290px;
+        width: 88%;
+        padding: 14px 16px;
         text-align: center;
         position: relative;
-        animation: fadeIn 0.3s ease-out;
+        animation: fadeIn 0.25s ease-out;
         pointer-events: auto;
       ">
         <!-- Close [X] Button -->
         <button id="btn-collapse-close-x" title="Close Window (ESC)" style="
           position: absolute;
-          top: 10px;
-          right: 14px;
+          top: 8px;
+          right: 10px;
           background: none;
           border: none;
           color: #f87171;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 300;
           cursor: pointer;
-          padding: 2px 6px;
+          padding: 2px 4px;
           line-height: 1;
           transition: color 0.15s;
         ">&times;</button>
 
-        <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2.5px; color: #f87171; margin-bottom: 4px;">
+        <div style="font-size: 9px; font-family: var(--font-mono); letter-spacing: 1.5px; color: #f87171; margin-bottom: 2px;">
           ⚠️ TIME EXPIRED
         </div>
-        <div style="font-size: 20px; font-weight: 900; letter-spacing: 1.5px; color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); margin-bottom: 12px;">
+        <div style="font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); margin-bottom: 6px;">
           REALM COLLAPSED
         </div>
-        <div style="font-size: 12px; color: #cbd5e1; line-height: 1.4; margin-bottom: 12px;">
+        <div style="font-size: 10.5px; color: #cbd5e1; line-height: 1.35; margin-bottom: 8px;">
           Extraction portal unreachable in time. Dimensional fabric disintegrated.
         </div>
 
@@ -2179,23 +2179,23 @@ export class SampoGame {
           justify-content: space-around;
           background: rgba(0, 0, 0, 0.45);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 6px;
-          padding: 8px 10px;
-          margin-bottom: 16px;
+          border-radius: 5px;
+          padding: 5px 8px;
+          margin-bottom: 12px;
           font-family: var(--font-mono);
-          font-size: 11px;
+          font-size: 10px;
         ">
-          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 13px;">${this.player ? this.player.level : 1}</strong></div>
-          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 13px;">${this.kills}</strong></div>
-          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 13px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
+          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 11px;">${this.player ? this.player.level : 1}</strong></div>
+          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 11px;">${this.kills}</strong></div>
+          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 11px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 8px; justify-content: center;">
-          <button id="btn-collapse-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 12px rgba(239, 68, 68, 0.4); padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+        <div style="display: flex; gap: 6px; justify-content: center;">
+          <button id="btn-collapse-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 10px rgba(239, 68, 68, 0.35); padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
             🔄 RESTART REALM
           </button>
-          <button id="btn-collapse-menu" class="sampo-btn" style="padding: 9px 16px; font-size: 12px; cursor: pointer; pointer-events: auto; flex: 1;">
+          <button id="btn-collapse-menu" class="sampo-btn" style="padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
             🚀 SAGA MENU
           </button>
         </div>
@@ -2539,13 +2539,13 @@ export class SampoGame {
           this.puzzleUI.open(puzzle, () => {
             this.puzzleDone = true;
             this.hud.hideMonolithNavigation();
-            this.hud.addLog(`★ MAGIC PROTOCOL SYNCHRONIZED: ${puzzle.verseTitle} (+350 XP, +60 Scrap)!`, 'rune');
+            this.hud.addLog(`★ MAGIC PROTOCOL SYNCHRONIZED: ${puzzle.verseTitle} (+150 XP, +25 Scrap)!`, 'rune');
             const prevLvl = this.player!.level;
-            this.player!.gainXP(350);
-            this.player!.naniteScrap += 60;
+            this.player!.gainXP(150);
+            this.player!.naniteScrap += 25;
             combatEngine.addFloatingText(puzzle.x, puzzle.y, '👑 ALL SECTOR VAULTS UNSEALED!', 'crit');
             if (this.player!.level > prevLvl) {
-              this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player!.level} (+3 Stat Points)`, 'level');
+              this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player!.level} (+1 Stat Point)`, 'level');
             }
             this.chests.forEach(c => { if (c.isLocked) c.unlock(); });
             this.hud.addLog('Unlocked all sealed cache vaults in sector!', 'loot');
@@ -3030,8 +3030,8 @@ export class SampoGame {
       const remaining = this.activeSwarmEnemies.filter(e => !e.isDead);
       if (remaining.length === 0) {
         this.activeSwarmEnemies = [];
-        const bonusXp = 120 + this.world!.biome.order * 25;
-        const bonusScrap = 40 + this.world!.biome.order * 10;
+        const bonusXp = 50 + this.world!.biome.order * 15;
+        const bonusScrap = 12 + this.world!.biome.order * 4;
         const prevLvl = this.player.level;
         this.player.gainXP(bonusXp);
         this.player.naniteScrap += bonusScrap;
@@ -3039,7 +3039,7 @@ export class SampoGame {
         this.hud.addLog(`★ SWARM DECIMATED! Awarded +${bonusXp} XP & +${bonusScrap} Scrap!`, 'level');
         combatEngine.addFloatingText(this.player.x, this.player.y, `★ SWARM CLEARED (+${bonusXp} XP) ★`, 'heal');
         if (this.player.level > prevLvl) {
-          this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+3 Stat Points)`, 'level');
+          this.hud.addLog(`★ LEVEL UP! Advanced to Level ${this.player.level} (+1 Stat Point)`, 'level');
         }
         this.savePlayer();
       } else {

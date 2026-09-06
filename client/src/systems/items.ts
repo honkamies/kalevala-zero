@@ -149,14 +149,14 @@ export class ItemGenerator {
   ];
 
   static generateRandomLoot(itemLevel: number = 1, forceRarity?: ItemRarity): Item {
-    // Determine Rarity
+    // Determine Rarity - tuned down so high tiers are rare achievements
     let rarity: ItemRarity = forceRarity || 'common';
     if (!forceRarity) {
       const roll = Math.random();
-      if (roll > 0.95) rarity = 'relic';
-      else if (roll > 0.85) rarity = 'masterwork';
-      else if (roll > 0.65) rarity = 'runic';
-      else if (roll > 0.35) rarity = 'augmented';
+      if (roll > 0.99 && itemLevel >= 5) rarity = 'relic';
+      else if (roll > 0.94 && itemLevel >= 3) rarity = 'masterwork';
+      else if (roll > 0.80) rarity = 'runic';
+      else if (roll > 0.50) rarity = 'augmented';
       else rarity = 'common';
     }
 
@@ -210,7 +210,7 @@ export class ItemGenerator {
         affixes: [],
         sockets: [],
         icon: pot.icon,
-        naniteValue: 20 * itemLevel,
+        naniteValue: Math.max(4, Math.round(6 * itemLevel)),
         description: pot.desc
       };
     }
@@ -243,7 +243,7 @@ export class ItemGenerator {
         affixes: [bonuses[elem]],
         sockets: [],
         icon: 'gem',
-        naniteValue: 35 * itemLevel,
+        naniteValue: Math.max(8, Math.round(12 * itemLevel)),
         description: 'A socketable Runic Shard (*Riimukivi*). Infuse into an open socket at the Forge.'
       };
     }
@@ -297,7 +297,7 @@ export class ItemGenerator {
         affixes,
         sockets,
         icon: base.icon,
-        naniteValue: 50 * itemLevel * (rarity === 'relic' ? 4 : 2),
+        naniteValue: Math.max(10, Math.round(15 * itemLevel * (rarity === 'relic' ? 3 : rarity === 'masterwork' ? 2 : rarity === 'runic' ? 1.5 : 1))),
         description: `High-grade ${rarity} armament engineered for cosmic wasteland combat.`
       };
     } else {
@@ -336,7 +336,7 @@ export class ItemGenerator {
         affixes,
         sockets,
         icon: base.icon,
-        naniteValue: 40 * itemLevel * (rarity === 'relic' ? 4 : 2),
+        naniteValue: Math.max(8, Math.round(12 * itemLevel * (rarity === 'relic' ? 3 : rarity === 'masterwork' ? 2 : rarity === 'runic' ? 1.5 : 1))),
         description: `Protective ${rarity} cybernetic apparel offering tactical mitigation.`
       };
     }
@@ -553,15 +553,45 @@ export function isBaseWeaponMatchingArchetype(weapon: Item | undefined | null, a
 export const MAX_WEAPON_UPGRADE_LEVEL = 10;
 
 export function getWeaponUpgradeCost(currentUpgradeLevel: number = 0): number {
-  const costs = [45, 75, 110, 155, 210, 280, 365, 465, 580, 720];
+  // Tuned upgrade costs requiring deliberate resource investment
+  const costs = [95, 175, 280, 420, 600, 820, 1100, 1450, 1900, 2500];
   const idx = Math.min(costs.length - 1, Math.max(0, currentUpgradeLevel));
   return costs[idx];
+}
+
+export interface SectorUpgradeCap {
+  maxLevel: number;
+  sectorName: string;
+  nextSectorName?: string;
+}
+
+export function getMaxWeaponUpgradeLevelForSector(sectorId?: string): SectorUpgradeCap {
+  const sId = sectorId || 'ilman_luominen';
+  switch (sId) {
+    case 'ilman_luominen':
+      return { maxLevel: 1, sectorName: 'Ilman Luominen (Map 1)', nextSectorName: 'Väinölä Wastes' };
+    case 'vainola':
+      return { maxLevel: 3, sectorName: 'Väinölä Wastes (Map 2)', nextSectorName: 'Pohjola Expanse' };
+    case 'pohjola':
+      return { maxLevel: 5, sectorName: 'Pohjola Expanse (Map 3)', nextSectorName: 'Tuonela Sub-Levels' };
+    case 'tuonela':
+      return { maxLevel: 7, sectorName: 'Tuonela Sub-Levels (Map 4)', nextSectorName: 'Alinen Abyss' };
+    case 'alinen':
+      return { maxLevel: 8, sectorName: 'Alinen Abyss (Map 5)', nextSectorName: 'Ylinen Celestial Forge' };
+    case 'ylinen':
+    case 'void_dimension':
+    default:
+      return { maxLevel: 10, sectorName: 'Ylinen Celestial Realm', nextSectorName: undefined };
+  }
 }
 
 export interface WeaponUpgradePreview {
   currentLevel: number;
   nextLevel: number;
   isMaxLevel: boolean;
+  isSectorCapped: boolean;
+  sectorCapLevel: number;
+  sectorCapMessage?: string;
   cost: number;
   canAfford: boolean;
   damageCurrent: number;
@@ -578,12 +608,17 @@ export interface WeaponUpgradePreview {
   areaRadiusMNext: number;
 }
 
-export function getWeaponUpgradePreview(item: Item, playerScrap: number): WeaponUpgradePreview {
+export function getWeaponUpgradePreview(item: Item, playerScrap: number, sectorId?: string): WeaponUpgradePreview {
   const currentLevel = item.upgradeLevel || 0;
   const isMaxLevel = currentLevel >= MAX_WEAPON_UPGRADE_LEVEL;
+  const sectorCap = getMaxWeaponUpgradeLevelForSector(sectorId);
+  const isSectorCapped = !isMaxLevel && currentLevel >= sectorCap.maxLevel;
   const nextLevel = Math.min(MAX_WEAPON_UPGRADE_LEVEL, currentLevel + 1);
-  const cost = isMaxLevel ? 0 : getWeaponUpgradeCost(currentLevel);
-  const canAfford = playerScrap >= cost && !isMaxLevel;
+  const cost = (isMaxLevel || isSectorCapped) ? 0 : getWeaponUpgradeCost(currentLevel);
+  const canAfford = playerScrap >= cost && !isMaxLevel && !isSectorCapped;
+  const sectorCapMessage = isSectorCapped
+    ? `Forge Resonance Cap (+${sectorCap.maxLevel}) reached in ${sectorCap.sectorName}. Advance to ${sectorCap.nextSectorName || 'deeper realms'} to unlock higher overclocks.`
+    : undefined;
 
   const damageCurrent = item.damage || 20;
   const damageNext = isMaxLevel ? damageCurrent : Math.round(damageCurrent * 1.22);
@@ -619,6 +654,9 @@ export function getWeaponUpgradePreview(item: Item, playerScrap: number): Weapon
     currentLevel,
     nextLevel,
     isMaxLevel,
+    isSectorCapped,
+    sectorCapLevel: sectorCap.maxLevel,
+    sectorCapMessage,
     cost,
     canAfford,
     damageCurrent,
@@ -636,7 +674,7 @@ export function getWeaponUpgradePreview(item: Item, playerScrap: number): Weapon
   };
 }
 
-export function upgradeWeapon(item: Item, playerScrap: number): { success: boolean; newScrap: number; error?: string } {
+export function upgradeWeapon(item: Item, playerScrap: number, sectorId?: string): { success: boolean; newScrap: number; error?: string } {
   if (item.type !== 'weapon') {
     return { success: false, newScrap: playerScrap, error: 'Only weapons can be enhanced in the Overclock Anvil.' };
   }
@@ -644,6 +682,15 @@ export function upgradeWeapon(item: Item, playerScrap: number): { success: boole
   const currentLevel = item.upgradeLevel || 0;
   if (currentLevel >= MAX_WEAPON_UPGRADE_LEVEL) {
     return { success: false, newScrap: playerScrap, error: 'Weapon is already at maximum overclock (+10).' };
+  }
+
+  const sectorCap = getMaxWeaponUpgradeLevelForSector(sectorId);
+  if (currentLevel >= sectorCap.maxLevel) {
+    return {
+      success: false,
+      newScrap: playerScrap,
+      error: `Forge Realm Resonance limit (+${sectorCap.maxLevel}) reached in ${sectorCap.sectorName}. Advance to ${sectorCap.nextSectorName || 'deeper realms'} to unlock higher overclocks.`
+    };
   }
 
   const cost = getWeaponUpgradeCost(currentLevel);

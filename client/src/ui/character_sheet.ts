@@ -1,6 +1,6 @@
 // Character Sheet & Core Attribute Point Allocation UI
 
-import { Player } from '../entities/player';
+import { Player, getDefaultStatsForArchetype } from '../entities/player';
 import { soundEngine } from '../engine/audio';
 import { HeroRenderer } from '../engine/hero_renderer';
 
@@ -59,7 +59,7 @@ export class CharacterSheetUI {
               </div>
             </div>
             <div class="unspent-points">
-              UNSPENT POINTS: <span style="font-size:18px; color:#fff;" id="unspent-pts-badge">${player.stats.statPoints}</span>
+              UNSPENT SP: <span style="font-size:18px; color:#38bdf8; font-weight:800;" id="unspent-pts-badge">${player.stats.statPoints}</span>
             </div>
           </div>
 
@@ -163,23 +163,18 @@ export class CharacterSheetUI {
 
     // Bind Respec button
     document.getElementById('btn-respec-stats')?.addEventListener('click', () => {
-      const arch = player.appearance.archetype;
-      const vakiBase = arch === 'tietäjä' ? 14 : (arch === 'runoseppä' ? 14 : 10);
-      const sisuBase = arch === 'soturi' ? 14 : 10;
-      const nokkelaBase = arch === 'runoseppä' ? 16 : (arch === 'korvenraivaaja' ? 14 : 10);
-      const tietoBase = arch === 'runoseppä' ? 14 : 10;
-
-      const spentVaki = Math.max(0, player.stats.vaki - vakiBase);
-      const spentSisu = Math.max(0, player.stats.sisu - sisuBase);
-      const spentNokkela = Math.max(0, player.stats.nokkela - nokkelaBase);
-      const spentTieto = Math.max(0, player.stats.tieto - tietoBase);
+      const baseStats = getDefaultStatsForArchetype(player.appearance.archetype);
+      const spentVaki = Math.max(0, player.stats.vaki - baseStats.vaki);
+      const spentSisu = Math.max(0, player.stats.sisu - baseStats.sisu);
+      const spentNokkela = Math.max(0, player.stats.nokkela - baseStats.nokkela);
+      const spentTieto = Math.max(0, player.stats.tieto - baseStats.tieto);
 
       const totalRefund = spentVaki + spentSisu + spentNokkela + spentTieto;
       if (totalRefund > 0) {
-        player.stats.vaki = vakiBase;
-        player.stats.sisu = sisuBase;
-        player.stats.nokkela = nokkelaBase;
-        player.stats.tieto = tietoBase;
+        player.stats.vaki = baseStats.vaki;
+        player.stats.sisu = baseStats.sisu;
+        player.stats.nokkela = baseStats.nokkela;
+        player.stats.tieto = baseStats.tieto;
         player.stats.statPoints += totalRefund;
         player.recalculateDerivedStats();
         soundEngine.playLevelUp();

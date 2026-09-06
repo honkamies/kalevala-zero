@@ -19,24 +19,27 @@ export class ShopCraftUI {
   private modalEl: HTMLElement | null = null;
   private isOpen: boolean = false;
   private onPlayerUpdate: () => void;
+  private getSectorId?: () => string;
   private selectedWeaponId: string | null = null;
 
-  constructor(root: HTMLElement, onPlayerUpdate: () => void) {
+  constructor(root: HTMLElement, onPlayerUpdate: () => void, getSectorId?: () => string) {
     this.root = root;
     this.onPlayerUpdate = onPlayerUpdate;
+    this.getSectorId = getSectorId;
   }
 
-  toggle(player: Player) {
+  toggle(player: Player, sectorId?: string) {
     if (this.isOpen) {
       this.close();
     } else {
-      this.open(player);
+      this.open(player, sectorId);
     }
   }
 
-  open(player: Player) {
+  open(player: Player, sectorId?: string) {
     this.close();
     this.isOpen = true;
+    const activeSectorId = sectorId || (this.getSectorId ? this.getSectorId() : 'ilman_luominen');
 
     // Collect all upgradeable weapons (base weapon + equipped arsenal + weapons in backpack)
     const allWeapons: { item: Item; isEquipped: boolean; slotBadge: string }[] = [];
@@ -79,10 +82,11 @@ export class ShopCraftUI {
     // Render Upgrade Preview HTML
     let upgradeHtml = '';
     if (activeWpn) {
-      const prev = getWeaponUpgradePreview(activeWpn, player.naniteScrap);
+      const prev = getWeaponUpgradePreview(activeWpn, player.naniteScrap, activeSectorId);
       const cat = getWeaponCategory(activeWpn);
       const catMeta = getWeaponCategoryMeta(cat);
       const isMax = prev.isMaxLevel;
+      const isCapped = prev.isSectorCapped;
       const currentRank = activeWpn.upgradeLevel || 0;
 
       // Weapon selector pills if player has multiple weapons
@@ -150,7 +154,30 @@ export class ShopCraftUI {
             </div>
           </div>
 
-          ${!isMax ? `
+          ${isMax ? `
+            <div style="background:rgba(245, 158, 11, 0.15); border:1px solid var(--gold-runic); border-radius:4px; padding:14px; text-align:center;">
+              <span style="font-size:24px;">⭐</span>
+              <div style="font-family:var(--font-rune); font-size:16px; color:var(--gold-runic); margin-top:4px;">
+                MAXIMUM OVERCLOCK REACHED (+10)
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
+                This weapon has attained Celestial Sampo Masterwork resonance. Devastating multi-projectile volleys, wide room spread, and barrier-shredding shockwaves are fully unlocked.
+              </div>
+            </div>
+          ` : isCapped ? `
+            <div style="background:rgba(239, 68, 68, 0.12); border:1px solid rgba(239, 68, 68, 0.45); border-radius:4px; padding:14px; text-align:center;">
+              <span style="font-size:24px;">🔒</span>
+              <div style="font-family:var(--font-rune); font-size:15px; color:#fca5a5; margin-top:4px;">
+                REALM RESONANCE CAP REACHED (+${currentRank} / +${prev.sectorCapLevel} MAX)
+              </div>
+              <div style="font-size:12px; color:var(--text-muted); margin-top:6px; line-height:1.5;">
+                ${prev.sectorCapMessage}
+              </div>
+              <div style="font-size:11px; color:#38bdf8; margin-top:8px; font-family:var(--font-mono);">
+                ⚔️ Extract to the next cosmological realm to deepen your resonance with Ilmarinen's Forge.
+              </div>
+            </div>
+          ` : `
             <!-- Stat Upgrades Comparison Grid -->
             <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; margin-bottom:14px;">
               <!-- 1. Harder Damage -->
@@ -207,23 +234,13 @@ export class ShopCraftUI {
                   ${prev.cost} Nanite Scrap 🔩
                 </strong>
                 ${!prev.canAfford ? `
-                  <span style="font-size:11px; color:#ef4444; margin-left:6px;">(Need ${prev.cost - player.naniteScrap} more)</span>
+                  <span style="font-size:11px; color:#ef4444; margin-left:6px;">(Need ${Math.max(0, prev.cost - player.naniteScrap)} more)</span>
                 ` : ''}
               </div>
 
               <button class="sampo-btn primary" id="btn-upgrade-wpn" ${!prev.canAfford ? 'disabled' : ''} style="padding:8px 20px; font-size:13px; font-weight:700; letter-spacing:0.5px; box-shadow:0 0 14px rgba(56, 189, 248, 0.4);">
                 ⚡ ENHANCE & OVERCLOCK (+${prev.nextLevel})
               </button>
-            </div>
-          ` : `
-            <div style="background:rgba(245, 158, 11, 0.15); border:1px solid var(--gold-runic); border-radius:4px; padding:14px; text-align:center;">
-              <span style="font-size:24px;">⭐</span>
-              <div style="font-family:var(--font-rune); font-size:16px; color:var(--gold-runic); margin-top:4px;">
-                MAXIMUM OVERCLOCK REACHED (+10)
-              </div>
-              <div style="font-size:12px; color:var(--text-muted); margin-top:4px;">
-                This weapon has attained Celestial Sampo Masterwork resonance. Devastating multi-projectile volleys, wide room spread, and barrier-shrendering shockwaves are fully unlocked.
-              </div>
             </div>
           `}
         </div>
@@ -266,8 +283,8 @@ export class ShopCraftUI {
             <div style="background:var(--bg-panel-sub); padding:14px; border:1px solid var(--border-dim); border-radius:4px; display:flex; flex-direction:column; gap:8px;">
               <div style="font-family:var(--font-rune); font-size:14px; color:var(--gold-runic);">FORGE CYBER-WEAPON</div>
               <div style="font-size:11px; color:var(--text-muted);">Synthesizes an advanced weapon matched to your character level with procedural elemental affixes.</div>
-              <div style="font-family:var(--font-mono); font-size:11px; color:var(--cyan-core);">Cost: 80 Nanite Scrap</div>
-              <button class="sampo-btn primary" id="craft-wpn-btn" ${player.naniteScrap < 80 ? 'disabled' : ''}>
+              <div style="font-family:var(--font-mono); font-size:11px; color:var(--cyan-core);">Cost: 140 Nanite Scrap</div>
+              <button class="sampo-btn primary" id="craft-wpn-btn" ${player.naniteScrap < 140 ? 'disabled' : ''}>
                 Synthesize Weapon
               </button>
             </div>
@@ -276,8 +293,8 @@ export class ShopCraftUI {
             <div style="background:var(--bg-panel-sub); padding:14px; border:1px solid var(--border-dim); border-radius:4px; display:flex; flex-direction:column; gap:8px;">
               <div style="font-family:var(--font-rune); font-size:14px; color:var(--gold-runic);">FORGE NANOWEAVE ARMOR</div>
               <div style="font-size:11px; color:var(--text-muted);">Constructs ballistic or hydraulic armor chassis infused with shielding protocols.</div>
-              <div style="font-family:var(--font-mono); font-size:11px; color:var(--cyan-core);">Cost: 60 Nanite Scrap</div>
-              <button class="sampo-btn primary" id="craft-arm-btn" ${player.naniteScrap < 60 ? 'disabled' : ''}>
+              <div style="font-family:var(--font-mono); font-size:11px; color:var(--cyan-core);">Cost: 100 Nanite Scrap</div>
+              <button class="sampo-btn primary" id="craft-arm-btn" ${player.naniteScrap < 100 ? 'disabled' : ''}>
                 Synthesize Armor
               </button>
             </div>
@@ -309,7 +326,7 @@ export class ShopCraftUI {
         if (id) {
           this.selectedWeaponId = id;
           soundEngine.playRuneClick();
-          this.open(player);
+          this.open(player, activeSectorId);
         }
       });
     });
@@ -317,7 +334,7 @@ export class ShopCraftUI {
     // Bind Upgrade Button
     document.getElementById('btn-upgrade-wpn')?.addEventListener('click', () => {
       if (!activeWpn) return;
-      const res = upgradeWeapon(activeWpn, player.naniteScrap);
+      const res = upgradeWeapon(activeWpn, player.naniteScrap, activeSectorId);
       if (res.success) {
         player.naniteScrap = res.newScrap;
         player.recalculateDerivedStats();
@@ -328,31 +345,31 @@ export class ShopCraftUI {
           particleSystem.emitSparks(player.x, player.y, 0.45, '#facc15', 3);
         }
         this.onPlayerUpdate();
-        this.open(player);
+        this.open(player, activeSectorId);
       }
     });
 
     // Bind Craft Weapon
     document.getElementById('craft-wpn-btn')?.addEventListener('click', () => {
-      if (player.naniteScrap >= 80 && player.inventory.length < 30) {
-        player.naniteScrap -= 80;
-        const newWpn = ItemGenerator.generateRandomLoot(player.level, Math.random() > 0.4 ? 'runic' : 'augmented');
+      if (player.naniteScrap >= 140 && player.inventory.length < 30) {
+        player.naniteScrap -= 140;
+        const newWpn = ItemGenerator.generateRandomLoot(player.level);
         player.inventory.push(newWpn);
         soundEngine.playLevelUp();
         this.onPlayerUpdate();
-        this.open(player);
+        this.open(player, activeSectorId);
       }
     });
 
     // Bind Craft Armor
     document.getElementById('craft-arm-btn')?.addEventListener('click', () => {
-      if (player.naniteScrap >= 60 && player.inventory.length < 30) {
-        player.naniteScrap -= 60;
-        const newArm = ItemGenerator.generateRandomLoot(player.level, Math.random() > 0.4 ? 'runic' : 'augmented');
+      if (player.naniteScrap >= 100 && player.inventory.length < 30) {
+        player.naniteScrap -= 100;
+        const newArm = ItemGenerator.generateRandomLoot(player.level);
         player.inventory.push(newArm);
         soundEngine.playLevelUp();
         this.onPlayerUpdate();
-        this.open(player);
+        this.open(player, activeSectorId);
       }
     });
 
@@ -362,14 +379,14 @@ export class ShopCraftUI {
       for (let i = player.inventory.length - 1; i >= 0; i--) {
         const item = player.inventory[i];
         if (item.rarity === 'common' && item.type !== 'consumable') {
-          gained += item.naniteValue || 15;
+          gained += item.naniteValue || 5;
           player.inventory.splice(i, 1);
         }
       }
       player.naniteScrap += gained;
       soundEngine.playRuneClick();
       this.onPlayerUpdate();
-      this.open(player);
+      this.open(player, activeSectorId);
     });
 
     // Render Socketing candidates

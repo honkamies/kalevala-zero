@@ -84,14 +84,15 @@ export class LightingEngine {
       const maxDistPixels = 30.0 * 32 * zoom;
 
       // 1. Guaranteed Hero Self-Illumination Core (Prevents hero sprite, head, and wall above from ever being shadowed)
-      const heroCoreRadius = 4.8 * 32 * zoom;
+      const heroCoreRadius = 5.2 * 32 * zoom;
       const heroCoreGrad = ctx.createRadialGradient(
         heroScreen.x, heroScreen.y - 20 * zoom, 4 * zoom,
         heroScreen.x, heroScreen.y - 20 * zoom, heroCoreRadius
       );
       heroCoreGrad.addColorStop(0, 'rgba(0, 0, 0, 1.0)');
-      heroCoreGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.98)');
-      heroCoreGrad.addColorStop(0.80, 'rgba(0, 0, 0, 0.70)');
+      heroCoreGrad.addColorStop(0.50, 'rgba(0, 0, 0, 0.95)');
+      heroCoreGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.60)');
+      heroCoreGrad.addColorStop(0.92, 'rgba(0, 0, 0, 0.20)');
       heroCoreGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0)');
 
       ctx.save();
@@ -107,8 +108,9 @@ export class LightingEngine {
         heroScreen.x, heroScreen.y, maxDistPixels
       );
       sightGrad.addColorStop(0, 'rgba(0, 0, 0, 1.0)');
-      sightGrad.addColorStop(0.70, 'rgba(0, 0, 0, 0.98)');
-      sightGrad.addColorStop(0.88, 'rgba(0, 0, 0, 0.80)');
+      sightGrad.addColorStop(0.55, 'rgba(0, 0, 0, 0.95)');
+      sightGrad.addColorStop(0.75, 'rgba(0, 0, 0, 0.75)');
+      sightGrad.addColorStop(0.90, 'rgba(0, 0, 0, 0.40)');
       sightGrad.addColorStop(1.0, 'rgba(0, 0, 0, 0.0)');
 
       ctx.save();
@@ -142,6 +144,23 @@ export class LightingEngine {
         ctx.closePath();
         ctx.fill();
 
+        // Smooth feathered edge transition from vision into darkness
+        // Zero-GC, hardware-accelerated path strokes eliminate harsh jagged cuts without expensive CSS blur filters
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+
+        ctx.lineWidth = 36 * zoom;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.16)';
+        ctx.stroke();
+
+        ctx.lineWidth = 22 * zoom;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.28)';
+        ctx.stroke();
+
+        ctx.lineWidth = 10 * zoom;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.45)';
+        ctx.stroke();
+
         // Upward-extended polygon pass: lifts vision envelope vertically to fully illuminate standing 2.5D wall structures
         ctx.beginPath();
         const heightLift = 22 * zoom;
@@ -154,11 +173,24 @@ export class LightingEngine {
         }
         ctx.closePath();
         ctx.fill();
+
+        ctx.lineWidth = 26 * zoom;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.20)';
+        ctx.stroke();
+
+        ctx.lineWidth = 12 * zoom;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.38)';
+        ctx.stroke();
       } else {
         // Fallback immediate vision circle around player
         ctx.beginPath();
         ctx.arc(heroScreen.x, heroScreen.y - 15 * zoom, 16.0 * 32 * zoom, 0, Math.PI * 2);
         ctx.fill();
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.lineWidth = 32 * zoom;
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.30)';
+        ctx.stroke();
       }
       ctx.restore();
     }

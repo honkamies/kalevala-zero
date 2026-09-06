@@ -929,31 +929,31 @@ export class IsometricRenderer {
     ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, cw, ch);
 
-    // 3. Cinematic Slow-Motion Death Banner (Center-Top)
-    const bannerY = Math.min(ch * 0.15, 110);
-    const bannerW = Math.min(cw * 0.88, 640);
-    const bannerH = 114;
+    // 3. Cinematic Slow-Motion Death Banner (Center-Top) - Compact, sleek tactical ribbon
+    const bannerW = Math.min(cw * 0.65, 330);
+    const bannerH = 54;
+    const bannerY = Math.min(ch * 0.08, 45);
     const bannerX = (cw - bannerW) / 2;
 
     ctx.save();
     // Glassmorphic dark backdrop
-    ctx.fillStyle = 'rgba(15, 3, 5, 0.94)';
+    ctx.fillStyle = 'rgba(15, 3, 5, 0.92)';
     ctx.beginPath();
-    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, [10]);
+    ctx.roundRect(bannerX, bannerY, bannerW, bannerH, [8]);
     ctx.fill();
 
     // Glowing Crimson / Gold Runic Border
     ctx.strokeStyle = isHitStop ? '#ef4444' : '#f59e0b';
-    ctx.lineWidth = 2.5;
+    ctx.lineWidth = 1.2;
     ctx.shadowColor = isHitStop ? '#ef4444' : '#f59e0b';
-    ctx.shadowBlur = 20;
+    ctx.shadowBlur = 8;
     ctx.stroke();
 
-    // Corner brackets
-    const bracketSize = 16;
+    // Subtle corner brackets
+    const bracketSize = 8;
     ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2.5;
-    ctx.shadowBlur = 6;
+    ctx.lineWidth = 1.2;
+    ctx.shadowBlur = 3;
     // Top-Left
     ctx.beginPath();
     ctx.moveTo(bannerX + bracketSize, bannerY);
@@ -980,24 +980,24 @@ export class IsometricRenderer {
     ctx.stroke();
 
     // Header Tag
-    ctx.font = 'bold 12px "Share Tech Mono", monospace';
+    ctx.font = 'bold 9px "Share Tech Mono", monospace';
     ctx.textAlign = 'center';
     ctx.fillStyle = isHitStop ? '#fca5a5' : '#fde047';
     ctx.shadowBlur = 0;
     const headerText = isHitStop
-      ? '⚠️ FATAL IMPACT // CONTAINMENT BREACH'
-      : '💥 VESSEL DETONATED // SAMPO LINK SEVERED';
-    ctx.fillText(headerText, cw / 2, bannerY + 28);
+      ? '⚠️ CRITICAL IMPACT'
+      : '💥 VESSEL COLLAPSED';
+    ctx.fillText(headerText, cw / 2, bannerY + 16);
 
     // Lethal Strike Details: Killer Name
-    ctx.font = 'bold 22px "Cinzel", serif, sans-serif';
+    ctx.font = 'bold 13px "Rajdhani", "Cinzel", sans-serif';
     ctx.fillStyle = '#ffffff';
     ctx.shadowColor = '#ef4444';
-    ctx.shadowBlur = 12;
-    ctx.fillText(`TERMINATED BY: ${fatal.killerName.toUpperCase()}`, cw / 2, bannerY + 62);
+    ctx.shadowBlur = 6;
+    ctx.fillText(`SLAIN BY: ${fatal.killerName.toUpperCase()}`, cw / 2, bannerY + 32);
 
     // Damage & Type Breakdown
-    ctx.font = 'bold 14px "Share Tech Mono", monospace';
+    ctx.font = '10px "Share Tech Mono", monospace';
     ctx.shadowBlur = 0;
     const dmgTypeStr = String(fatal.damageType || 'physical').toUpperCase();
     const typeColor = {
@@ -1009,12 +1009,8 @@ export class IsometricRenderer {
       PHYSICAL: '#e2e8f0'
     }[dmgTypeStr] || '#f87171';
 
-    ctx.fillStyle = '#cbd5e1';
-    ctx.fillText(`FATAL DAMAGE: `, cw / 2 - 80, bannerY + 92);
-    ctx.fillStyle = '#ef4444';
-    ctx.fillText(`${fatal.amount}`, cw / 2 - 20, bannerY + 92);
     ctx.fillStyle = typeColor;
-    ctx.fillText(`[${dmgTypeStr}]`, cw / 2 + 50, bannerY + 92);
+    ctx.fillText(`-${fatal.amount} [${dmgTypeStr}]`, cw / 2, bannerY + 46);
 
     ctx.restore();
     ctx.restore();

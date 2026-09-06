@@ -28,34 +28,83 @@ export class LootChest {
     this.y = y;
     this.isLocked = isLocked;
 
-    // Determine chest rarity and sequence difficulty
+    // Determine chest rarity and sequence difficulty (scaled by sector/level)
     const r = Math.random();
     let seqLen = 4;
     let timeLimit = 2.4;
 
-    if (r > 0.92) {
-      this.rarity = 'masterwork';
-      this.displayName = 'Masterwork Nanite Coffer';
-      seqLen = 7;
-      timeLimit = 1.4;
-      this.maxAttempts = 2; // Volatile high-tier coffer
-    } else if (r > 0.6) {
-      this.rarity = 'runic';
-      this.displayName = 'Runic Cryptographic Vault';
-      seqLen = 6;
-      timeLimit = 1.8;
-      this.maxAttempts = itemLevel >= 4 ? 2 : 3;
+    if (itemLevel <= 2) {
+      // First map / early levels: mostly common and augmented supply caches
+      if (r > 0.95) {
+        this.rarity = 'runic';
+        this.displayName = 'Runic Cryptographic Vault';
+        seqLen = 5;
+        timeLimit = 1.8;
+        this.maxAttempts = 3;
+      } else if (r > 0.60) {
+        this.rarity = 'augmented';
+        this.displayName = 'Augmented Cyber-Cache';
+        seqLen = 4;
+        timeLimit = 2.2;
+        this.maxAttempts = 3;
+      } else {
+        this.rarity = 'common';
+        this.displayName = 'Standard Nanite Supply Crate';
+        seqLen = 3;
+        timeLimit = 2.5;
+        this.maxAttempts = 3;
+      }
+    } else if (itemLevel <= 4) {
+      if (r > 0.95) {
+        this.rarity = 'masterwork';
+        this.displayName = 'Masterwork Nanite Coffer';
+        seqLen = 6;
+        timeLimit = 1.6;
+        this.maxAttempts = 2;
+      } else if (r > 0.70) {
+        this.rarity = 'runic';
+        this.displayName = 'Runic Cryptographic Vault';
+        seqLen = 5;
+        timeLimit = 1.8;
+        this.maxAttempts = 3;
+      } else if (r > 0.35) {
+        this.rarity = 'augmented';
+        this.displayName = 'Augmented Cyber-Cache';
+        seqLen = 4;
+        timeLimit = 2.2;
+        this.maxAttempts = 3;
+      } else {
+        this.rarity = 'common';
+        this.displayName = 'Standard Nanite Supply Crate';
+        seqLen = 3;
+        timeLimit = 2.4;
+        this.maxAttempts = 3;
+      }
     } else {
-      this.rarity = 'augmented';
-      this.displayName = 'Augmented Cyber-Cache';
-      seqLen = 4;
-      timeLimit = 2.2;
-      this.maxAttempts = itemLevel >= 5 ? 2 : 3;
+      if (r > 0.90) {
+        this.rarity = 'masterwork';
+        this.displayName = 'Masterwork Nanite Coffer';
+        seqLen = 7;
+        timeLimit = 1.4;
+        this.maxAttempts = 2;
+      } else if (r > 0.55) {
+        this.rarity = 'runic';
+        this.displayName = 'Runic Cryptographic Vault';
+        seqLen = 6;
+        timeLimit = 1.8;
+        this.maxAttempts = 2;
+      } else {
+        this.rarity = 'augmented';
+        this.displayName = 'Augmented Cyber-Cache';
+        seqLen = 4;
+        timeLimit = 2.2;
+        this.maxAttempts = 3;
+      }
     }
 
     this.attemptsLeft = this.maxAttempts;
     this.timeLimitPerKey = timeLimit;
-    this.explosionDamage = Math.round(25 + itemLevel * 9);
+    this.explosionDamage = Math.round(20 + itemLevel * 8);
 
     // Generate random WASD sequence
     const keys: DecryptionKey[] = ['W', 'A', 'S', 'D'];
@@ -64,8 +113,8 @@ export class LootChest {
       this.keySequence.push(k);
     }
 
-    // Generate 1-3 high-tier items
-    const itemCount = 1 + Math.floor(Math.random() * 3);
+    // Tuned down loot: 1 item per chest (rare chance of 2 in masterwork)
+    const itemCount = (this.rarity === 'masterwork' && Math.random() < 0.20) ? 2 : 1;
     for (let i = 0; i < itemCount; i++) {
       this.contents.push(ItemGenerator.generateRandomLoot(itemLevel, this.rarity));
     }

@@ -2,7 +2,7 @@
 // Enemy AI State Machine, Tactical Attack Variants & Enhanced Boss Weapons Subsystem
 // ============================================================================
 
-import { DamageType, Item, ItemGenerator } from '../systems/items';
+import { DamageType, Item, ItemGenerator, ItemRarity } from '../systems/items';
 import { soundEngine } from '../engine/audio';
 import { particleSystem } from '../engine/particles';
 import { projectileManager, ProjectileStyle } from './projectile';
@@ -1342,15 +1342,20 @@ export class Enemy {
 
   generateDrop(itemLevel: number): Item[] {
     const drops: Item[] = [];
-    const dropChance = this.isBoss ? 1.0 : this.isElite ? 0.7 : 0.35;
+    // Tuned down drop rates: loot drops are rare and exciting
+    const dropChance = this.isBoss ? 1.0 : this.isElite ? 0.25 : 0.07;
 
     if (Math.random() < dropChance) {
       const rarityRoll = Math.random();
-      const rarity = this.isBoss
-        ? (rarityRoll > 0.4 ? 'masterwork' : 'relic')
-        : this.isElite
-        ? (rarityRoll > 0.6 ? 'masterwork' : 'runic')
-        : (rarityRoll > 0.8 ? 'runic' : rarityRoll > 0.4 ? 'augmented' : 'common');
+      let rarity: ItemRarity = 'common';
+      if (this.isBoss) {
+        rarity = itemLevel >= 5 ? (rarityRoll > 0.6 ? 'relic' : 'masterwork') : (rarityRoll > 0.5 ? 'masterwork' : 'runic');
+      } else if (this.isElite) {
+        rarity = rarityRoll > 0.88 ? 'masterwork' : (rarityRoll > 0.50 ? 'runic' : (rarityRoll > 0.15 ? 'augmented' : 'common'));
+      } else {
+        // Normal enemy: mostly common, rare augmented
+        rarity = rarityRoll > 0.96 ? 'runic' : (rarityRoll > 0.72 ? 'augmented' : 'common');
+      }
 
       drops.push(ItemGenerator.generateRandomLoot(itemLevel, rarity));
     }

@@ -22,17 +22,19 @@ export interface PlayerStats {
   statPoints: number;
 }
 
+export const MAX_UNSPENT_STAT_POINTS = 5;
+
 export function getDefaultStatsForArchetype(archetype: string): PlayerStats {
   switch (archetype) {
     case 'soturi':
-      return { sisu: 16, nokkela: 7, vaki: 8, tieto: 9, statPoints: 0 };
+      return { sisu: 12, nokkela: 6, vaki: 6, tieto: 6, statPoints: 0 };
     case 'korvenraivaaja':
-      return { sisu: 7, nokkela: 16, vaki: 9, tieto: 8, statPoints: 0 };
+      return { sisu: 6, nokkela: 12, vaki: 6, tieto: 6, statPoints: 0 };
     case 'tietäjä':
-      return { sisu: 8, nokkela: 8, vaki: 16, tieto: 13, statPoints: 0 };
+      return { sisu: 6, nokkela: 6, vaki: 12, tieto: 8, statPoints: 0 };
     case 'runoseppä':
     default:
-      return { sisu: 11, nokkela: 8, vaki: 12, tieto: 15, statPoints: 0 };
+      return { sisu: 7, nokkela: 6, vaki: 8, tieto: 11, statPoints: 0 };
   }
 }
 
@@ -105,7 +107,7 @@ export class Player {
   public baseWeapon!: Item;
   public inventory: Item[] = [];
   public equipment: Partial<Record<ItemSlot, Item>> = {};
-  public naniteScrap: number = 150;
+  public naniteScrap: number = 0;
 
   // Dynamic Vitals
   public health: number = 100;
@@ -394,14 +396,14 @@ export class Player {
     this.cooldowns.potion = 0;
   }
 
-  // Gain XP & Level Up logic
+  // Gain XP & Level Up logic (tuned down SP progression)
   gainXP(amount: number): boolean {
     this.xp += amount;
     const needed = this.getXPToNextLevel();
     if (this.xp >= needed) {
       this.xp -= needed;
       this.level++;
-      this.stats.statPoints += 3;
+      this.stats.statPoints = Math.min(MAX_UNSPENT_STAT_POINTS, (this.stats.statPoints || 0) + 1);
       this.recalculateDerivedStats();
       this.health = this.maxHealth;
       this.shield = this.maxShield;
@@ -415,7 +417,7 @@ export class Player {
   }
 
   getXPToNextLevel(): number {
-    return this.level * 120;
+    return 180 + this.level * 140;
   }
 
   setMovement(dx: number, dy: number) {

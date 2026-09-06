@@ -568,7 +568,7 @@ export class PlatformerMode {
         const dy = c.y - py;
         if (Math.sqrt(dx * dx + dy * dy) < 2.2) {
           c.isOpen = true;
-          const scrapFound = 75 + Math.floor(Math.random() * 90);
+          const scrapFound = 15 + Math.floor(Math.random() * 20);
           this.playerCtrl!.player.naniteScrap += scrapFound;
           soundEngine.playLootDrop(true);
           particleSystem.emitBeacon(c.x, c.y, '#facc15');
@@ -670,9 +670,9 @@ export class PlatformerMode {
   private onEnemyKilled(e: PlatformerEnemy) {
     particleSystem.emitEnemyDeathExplosion(e.x, e.y, e.color, e.isBoss, e.isElite);
     this.camera.addShake(e.isBoss ? 2.0 : (e.isElite ? 0.9 : 0.5), 0.08);
-    this.playerCtrl!.player.gainXP(e.type === 'broodmother' ? 140 : 65);
-    this.playerCtrl!.player.naniteScrap += e.type === 'broodmother' ? 50 : 25;
-    this.hud.addLog(`Slew ${e.name} (+${e.type === 'broodmother' ? 140 : 65} XP)`, 'level');
+    this.playerCtrl!.player.gainXP(e.type === 'broodmother' ? 60 : 25);
+    this.playerCtrl!.player.naniteScrap += e.type === 'broodmother' ? 12 : 5;
+    this.hud.addLog(`Slew ${e.name} (+${e.type === 'broodmother' ? 60 : 25} XP)`, 'level');
 
     // Broodmother On-Death Spawning: Releases 4 small flying wisps that scatter into the air!
     if (e.type === 'broodmother') {

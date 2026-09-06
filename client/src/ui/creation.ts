@@ -237,7 +237,7 @@ export class CharacterCreationUI {
       } else {
         player.level = 1;
         player.xp = 0;
-        player.naniteScrap = 150;
+        player.naniteScrap = 0;
       }
 
       soundEngine.playLevelUp();

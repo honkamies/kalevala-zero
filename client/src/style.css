@@ -88,10 +88,7 @@ body, html {
   height: 100%;
   pointer-events: none;
   mix-blend-mode: multiply;
-  image-rendering: -moz-crisp-edges;
-  image-rendering: -webkit-crisp-edges;
-  image-rendering: pixelated;
-  image-rendering: crisp-edges;
+  image-rendering: auto;
 }
 
 /* Retro CRT Monitor Overlays */
@@ -1011,9 +1008,14 @@ body, html {
   min-width: 240px;
   max-width: 320px;
   box-shadow: 0 12px 36px rgba(0, 0, 0, 0.95), 0 0 15px rgba(56, 189, 248, 0.12);
-  pointer-events: none;
+  pointer-events: none !important;
+  user-select: none;
   backdrop-filter: blur(10px);
   transition: opacity 0.1s ease;
+}
+
+.item-tooltip * {
+  pointer-events: none !important;
 }
 
 .item-tooltip.comparison-mode {

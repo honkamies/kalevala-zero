@@ -204,7 +204,7 @@ export class ProfileModalUI {
                     </div>
 
                     <div style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted); display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-                      <span>⚡ ${p.playerData?.naniteScrap !== undefined ? p.playerData.naniteScrap : 150} Scrap</span>
+                      <span>⚡ ${p.playerData?.naniteScrap !== undefined ? p.playerData.naniteScrap : 0} Scrap</span>
                       <span>•</span>
                       <span style="color:#38bdf8; font-weight:700;">⚔️ ${p.playerData?.baseWeapon?.name || getStarterWeaponForArchetype(p.archetype).name}</span>
                       <span>•</span>
