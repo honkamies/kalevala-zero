@@ -25,13 +25,15 @@ export class VoidGateway {
   public pulseTimer: number = 0;
   public hurtFlashTimer: number = 0;
 
-  constructor(x: number, y: number, biomeId: string = 'ilman_luominen', itemLevel: number = 1) {
+  constructor(x: number, y: number, biomeId: string = 'ilman_luominen', itemLevel: number = 1, loop: number = 0) {
     this.id = 'gateway_' + Math.random().toString(36).substring(2, 8);
     this.x = x;
     this.y = y;
     this.biomeId = biomeId;
 
-    this.maxHealth = 220 + itemLevel * 30;
+    this.spawnInterval = Math.max(1.6, 3.8 - loop * 0.45);
+    this.maxMinions = 5 + loop * 2;
+    this.maxHealth = Math.round((220 + itemLevel * 30) * (1.0 + loop * 0.35));
     this.health = this.maxHealth;
 
     const names: Record<string, string> = {

@@ -34,8 +34,9 @@ export class ColossalRTypeBoss {
   public width: number = 13.5;  // 13.5 tiles wide (~650px)
   public height: number = 18.0; // 18.0 tiles high (~860px)
 
-  public health: number = 9200;
-  public maxHealth: number = 9200;
+  public level: number = 30; // Boosted start level for final colossal horror
+  public health: number = 24000;
+  public maxHealth: number = 24000;
   public isDead: boolean = false;
   public isEnraged: boolean = false;
   public pulseTimer: number = 0;
@@ -67,8 +68,8 @@ export class ColossalRTypeBoss {
         relY: -6.5,
         width: 3.5,
         height: 3.0,
-        health: 1400,
-        maxHealth: 1400,
+        health: 3200,
+        maxHealth: 3200,
         isDestroyed: false,
         color: '#a855f7',
         type: 'eyestalk_cluster',
@@ -84,8 +85,8 @@ export class ColossalRTypeBoss {
         relY: -2.0,
         width: 4.2,
         height: 4.0,
-        health: 2200,
-        maxHealth: 2200,
+        health: 5400,
+        maxHealth: 5400,
         isDestroyed: false,
         color: '#dc2626',
         type: 'vertical_maw',
@@ -101,8 +102,8 @@ export class ColossalRTypeBoss {
         relY: -2.5,
         width: 3.5,
         height: 3.5,
-        health: 2600,
-        maxHealth: 2600,
+        health: 7200,
+        maxHealth: 7200,
         isDestroyed: false,
         color: '#facc15',
         type: 'exposed_heart',
@@ -118,8 +119,8 @@ export class ColossalRTypeBoss {
         relY: 2.2,
         width: 3.8,
         height: 3.5,
-        health: 1500,
-        maxHealth: 1500,
+        health: 3800,
+        maxHealth: 3800,
         isDestroyed: false,
         color: '#eab308',
         type: 'weeping_eyes',
@@ -135,8 +136,8 @@ export class ColossalRTypeBoss {
         relY: 6.5,
         width: 5.2,
         height: 3.8,
-        health: 1500,
-        maxHealth: 1500,
+        health: 4400,
+        maxHealth: 4400,
         isDestroyed: false,
         color: '#16a34a',
         type: 'centipede_base',
@@ -151,8 +152,8 @@ export class ColossalRTypeBoss {
       this.drones.push({
         angle: (i * Math.PI) / 2,
         radius: 5.5,
-        health: 350,
-        maxHealth: 350,
+        health: 800,
+        maxHealth: 800,
         isDestroyed: false,
         hurtFlashTimer: 0
       });

@@ -22,6 +22,7 @@ export class Enemy {
   public angle: number = 0;
   public radius: number = 0.45;
 
+  public level: number = 1;
   public health: number;
   public maxHealth: number;
   public speed: number;
@@ -104,7 +105,8 @@ export class Enemy {
     isRanged: boolean = false,
     isMech: boolean = true,
     isBoss: boolean = false,
-    isElite: boolean = false
+    isElite: boolean = false,
+    level: number = 1
   ) {
     this.id = id;
     this.name = name;
@@ -119,9 +121,14 @@ export class Enemy {
     this.isMech = isMech;
     this.isBoss = isBoss;
     this.isElite = isElite;
+    this.level = level;
 
     this.type = name.toLowerCase().replace(/\s+/g, '_');
-    this.armor = isBoss ? 38 : isElite ? 18 : 6;
+    this.armor = isBoss
+      ? 38 + Math.min(30, Math.floor(level * 0.8))
+      : isElite
+      ? 18 + Math.min(18, Math.floor(level * 0.5))
+      : 6 + Math.min(12, Math.floor(level * 0.3));
 
     if (isBoss) {
       if (this.id.includes('void_mist')) this.radius = 2.8;

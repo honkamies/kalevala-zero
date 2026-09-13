@@ -176,7 +176,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     description: 'The inescapable subterranean underworld of Tuoni and Tuonetar. A bleak expanse of eternal grief, bone cairns, skeletal kelo-trees, and the pitch-black River Tuoni laced with thousands of iron nets and razor scythes to ensnare wandering souls.',
     kanteletarVerse: '“Ei Tuonelta tulla vasta, Manalalta matkataan! Tuonen tytöt verkkoja kutoo, rautaisia rysänpohjia, tuhansia vaskilankoja — jottei sielu pääsisi pois, elävä ei palajaisi.”',
     hazardDescription: 'Tuonen Musta Virta: Freezing black stygian currents laced with iron scythes and drowning soul maelstroms.',
-    recommendedLevel: 9,
+    recommendedLevel: 13,
     palette: {
       floorPrimary: '#0a080f',
       floorSecondary: '#040306',
@@ -191,7 +191,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
       id: 'boss_tuoni',
       name: 'Tuoni Skeleton King // Kalman-Kuningas',
       title: 'Sovereign of the Underworld & High Lich of Tuonela',
-      maxHealth: 5200,
+      maxHealth: 9800,
       phases: 3,
       specialAttack: 'Black Stygian Maelstrom & Skeletal Battle-Axe Cleave',
       quote: '“Manalan mahti ei murru, kuoleman kynsi ei hellitä! Tänne jäät Tuonen mustaan mutaan!”'
@@ -217,7 +217,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     description: 'The deepest subterranean and underwater abyss beneath creation. Molten magma trenches and ancient sea monsters guard the roots of the World Tree.',
     kanteletarVerse: '“Nousi Iku-Turso äijä, meren mustasta mudasta, parta vaahdossa vellova, silmät tulta tuijottavat, syvyyksien valtias.”',
     hazardDescription: 'Thermal Magma Overload: Volcanic slag vents and superheated steam geysers.',
-    recommendedLevel: 12,
+    recommendedLevel: 18,
     palette: {
       floorPrimary: '#1a0905',
       floorSecondary: '#0f0402',
@@ -232,7 +232,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
       id: 'boss_turso',
       name: 'Iku-Turso Abyssal Construct',
       title: 'Primordial Leviathan of the Deep Trenches',
-      maxHealth: 7200,
+      maxHealth: 18000,
       phases: 3,
       specialAttack: 'Magma Geyser Eruption & Abyssal Tentacle Crag',
       quote: '“Meren pohjasta minä nousen, syvyyksien mustasta mudasta!”'
@@ -258,7 +258,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     description: 'The highest celestial realm around the North Star (Pohjantähti). Here Ilmarinen\'s Sky-Forge and Ukko\'s lightning generators reconstruct the eternal Sampo.',
     kanteletarVerse: '“Tule Ukko, ota säde, iske tulta ilman päältä! Taohan seppo Sampo uusi, kirjokansi kalkuttele, tuomaan onnea ikuista!”',
     hazardDescription: 'High-Voltage Celestial Storms: Solar arc lightning discharges and gravity fluctuations.',
-    recommendedLevel: 15,
+    recommendedLevel: 26,
     palette: {
       floorPrimary: '#161329',
       floorSecondary: '#0d0a1c',
@@ -273,7 +273,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
       id: 'boss_sampo_core',
       name: 'The Restored Cosmic Sampo & Ilmarinen Construct',
       title: 'Supreme Autonomous Forge of Universal Abundance',
-      maxHealth: 9800,
+      maxHealth: 32000,
       phases: 4,
       specialAttack: 'Supercharged Kirjokansi Ray & Celestial Lightning Overdrive',
       quote: '“Jo takoi tulisen Sammon, kirjokannen kalkutteli: jauhaa viljaa, jauhaa suolaa, jauhaa rahaa rikkahaksi!”'
@@ -298,7 +298,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     description: 'A boundless anomaly beyond the cosmic matrix where all collapsed realities converge. No walls, no mortal minions, only the eternal shadows of fallen sovereigns and the Void Overlord.',
     kanteletarVerse: '“Tuolla puolen taivahan, tuolla puolen tuonelan, ei oo maata, ei oo vettä, pelkkä musta tyhjyys pauhaa — syntysanojen syvin lähde.”',
     hazardDescription: 'Singularity Gravitational Waves: Reality distortions and quantum spacetime flux.',
-    recommendedLevel: 18,
+    recommendedLevel: 35,
     palette: {
       floorPrimary: '#05020c',
       floorSecondary: '#080314',
@@ -313,7 +313,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
       id: 'boss_void_mist',
       name: 'SURMA-MUSTA // THE VOID MIST OVERLORD',
       title: 'Musta Sumu - The Primordial Entropy & Cosmic Singularity',
-      maxHealth: 8500,
+      maxHealth: 52000,
       phases: 4,
       specialAttack: 'Supernova Reality Tear & Dimensional Graviton Rift',
       quote: '“Minä olen alku ja loppu, tyhjyys josta kaikki syntyi ja johon kaikki palaa!”'

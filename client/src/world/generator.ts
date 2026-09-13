@@ -162,7 +162,7 @@ export class DungeonGenerator {
   }
 
   // Master Generator Function
-  static generate(seed: number, biomeId: string = 'pohjola', mapSize: number = 84): GeneratedWorld {
+  static generate(seed: number, biomeId: string = 'pohjola', mapSize: number = 84, loopCount: number = 0): GeneratedWorld {
     if (biomeId === 'void_dimension') {
       return this.generateVoidDimension(seed, biomeId, mapSize > 70 ? 70 : mapSize);
     }
@@ -359,10 +359,12 @@ export class DungeonGenerator {
       }
 
       // Spawn Enemies only in non-boss rooms, far from player starting area
+      // Scales with next rounds / loops so subsequent expeditions have more hostiles & higher elite density
       if (r.type !== 'boss') {
         const isEliteRoom = r.type === 'elite';
-        const baseEnemies = isEliteRoom ? 6 : 4;
-        const enemyCount = baseEnemies + Math.floor(rng() * 4);
+        const roundExtra = Math.floor(loopCount * 2.5); // +2 to 3 enemies per room per round
+        const baseEnemies = (isEliteRoom ? 6 : 4) + roundExtra;
+        const enemyCount = baseEnemies + Math.floor(rng() * (4 + Math.min(6, loopCount * 2)));
 
         for (let e = 0; e < enemyCount; e++) {
           const ex = r.x + 1 + Math.floor(rng() * Math.max(1, r.w - 2));
@@ -373,11 +375,13 @@ export class DungeonGenerator {
             Math.hypot(ex - spawnPoint.x, ey - spawnPoint.y) > 16.0
           ) {
             const enemyTypeIndex = Math.floor(rng() * biome.enemyPool.length);
+            const eliteMax = isEliteRoom ? (2 + Math.floor(loopCount * 0.8)) : 0;
+            const isElite = (isEliteRoom && e < eliteMax) || rng() < (0.05 + loopCount * 0.06);
             enemySpawns.push({
               x: ex,
               y: ey,
               enemyTypeIndex,
-              isElite: isEliteRoom && e < 2
+              isElite
             });
           }
         }

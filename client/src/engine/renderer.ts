@@ -2631,7 +2631,7 @@ export class IsometricRenderer {
     }
 
     // 6. Overhead Health Bar & Shield Bar
-    if (!isBoss && (enemy.health < enemy.maxHealth || enemy.shield > 0)) {
+    if (!isBoss && (enemy.health < enemy.maxHealth || enemy.shield > 0 || isElite)) {
       const barW = (isElite ? 46 : 36) * z;
       const barH = 4.5 * z;
       const barY = heightOffset - spriteSize / 2 - 6 * z;

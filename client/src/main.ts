@@ -85,6 +85,8 @@ export class SampoGame {
   public sectorClears: Record<string, number> = {};
   public vaultGreedCount: number = 0;
 
+  public sectorRunTime: number = 0; // Elapsed run duration in seconds for current sector
+
   public getSectorLoop(sectorId: string): number {
     return this.sectorClears[sectorId] || 0;
   }
@@ -93,9 +95,11 @@ export class SampoGame {
     return this.vaultGreedCount * 5;
   }
 
-  public getDifficultyMultiplier(sectorId: string): number {
+  public getDifficultyMultiplier(sectorId: string, runTimeSeconds?: number): number {
     const loop = this.getSectorLoop(sectorId);
-    return (1.0 + (loop * 0.35)) * (1.0 + (this.vaultGreedCount * 0.05));
+    const rt = runTimeSeconds !== undefined ? runTimeSeconds : this.sectorRunTime;
+    const timeFactor = 1.0 + (rt / 60) * 0.05; // +5% hardness per minute elapsed in run
+    return (1.0 + (loop * 0.40)) * timeFactor * (1.0 + (this.vaultGreedCount * 0.05));
   }
 
   // Dynamic Random Swarm Incursions
@@ -124,8 +128,9 @@ export class SampoGame {
       id: 'boss_sotka_omega',
       name: 'Sotka Cyber-Harbinger (Genesis Core)',
       subtitle: 'Cosmic Genesis Avatar // Incarnation I',
-      health: 6800,
-      damage: 55,
+      level: 24,
+      health: 16000,
+      damage: 80,
       speed: 2.8,
       color: '#facc15',
       ranged: true
@@ -134,8 +139,9 @@ export class SampoGame {
       id: 'boss_surma_omega',
       name: 'Surma Cyber-Hound (Flesh-Metal Apex)',
       subtitle: 'Berserk Void Stalker // Incarnation II',
-      health: 9200,
-      damage: 64,
+      level: 27,
+      health: 22000,
+      damage: 95,
       speed: 3.1,
       color: '#f59e0b',
       ranged: false
@@ -144,8 +150,9 @@ export class SampoGame {
       id: 'boss_louhi_omega',
       name: 'Louhi Frost Guardian (Cryo Matrix Zero)',
       subtitle: 'Matriarch of the North // Incarnation III',
-      health: 12500,
-      damage: 72,
+      level: 30,
+      health: 30000,
+      damage: 112,
       speed: 2.6,
       color: '#38bdf8',
       ranged: true
@@ -154,8 +161,9 @@ export class SampoGame {
       id: 'boss_tuoni_omega',
       name: 'Tuoni Skeleton King (Kalman-Kuningas)',
       subtitle: 'Underworld High Lich // Incarnation IV',
-      health: 16500,
-      damage: 80,
+      level: 34,
+      health: 40000,
+      damage: 130,
       speed: 2.4,
       color: '#c084fc',
       ranged: true
@@ -164,8 +172,9 @@ export class SampoGame {
       id: 'boss_turso_omega',
       name: 'Iku-Turso Leviathan (Abyssal Magma Trench)',
       subtitle: 'Primordial Abyssal Construct // Incarnation V',
-      health: 22000,
-      damage: 88,
+      level: 38,
+      health: 54000,
+      damage: 150,
       speed: 2.1,
       color: '#ef4444',
       ranged: false
@@ -174,8 +183,9 @@ export class SampoGame {
       id: 'boss_sampo_omega',
       name: 'The Restored Cosmic Sampo (Overclocked)',
       subtitle: 'Supreme Autonomous Forge // Incarnation VI',
-      health: 32000,
-      damage: 96,
+      level: 44,
+      health: 72000,
+      damage: 175,
       speed: 2.8,
       color: '#fbbf24',
       ranged: true
@@ -184,8 +194,9 @@ export class SampoGame {
       id: 'boss_void_mist',
       name: 'SURMA-MUSTA // THE VOID MIST OVERLORD',
       subtitle: 'Musta Sumu - The Primordial Entropy & Cosmic Singularity // FINAL FORM',
-      health: 42000,
-      damage: 110,
+      level: 50,
+      health: 98000,
+      damage: 220,
       speed: 3.6,
       color: '#c084fc',
       ranged: true
@@ -900,9 +911,17 @@ export class SampoGame {
     });
 
     // 3. Procedurally generate dungeon world
+    // 3. Procedurally generate dungeon world with loop/round scaling
     this.loadingScreen.updateProgress(0.75, 'SYNTHESIZING ISOMETRIC VOXELS...');
+    this.sectorRunTime = 0; // Reset run timer for fresh expedition
+    const loop = this.getSectorLoop(sectorId);
+    const diffMult = this.getDifficultyMultiplier(sectorId, 0);
+    const dmgMult = (1.0 + (loop * 0.28)) * (1.0 + (this.vaultGreedCount * 0.05));
+    const speedMult = 1.0 + Math.min(0.45, loop * 0.07);
+    const eliteBonus = Math.min(0.55, loop * 0.08);
+
     const seed = Math.floor(Math.random() * 1000000);
-    this.world = DungeonGenerator.generate(seed, sectorId, 84);
+    this.world = DungeonGenerator.generate(seed, sectorId, 84, loop);
     this.fog = new FogOfWar(this.world.width, this.world.height);
     this.fog.revealArea(this.world.spawnPoint.x, this.world.spawnPoint.y, 16, true);
 
@@ -925,13 +944,6 @@ export class SampoGame {
     // Reset Sector-Specific Greed Hardness Tracking
     this.vaultGreedCount = 0;
 
-    // Calculate Sector Loop Tier & Hardness Multipliers
-    const loop = this.getSectorLoop(sectorId);
-    const diffMult = this.getDifficultyMultiplier(sectorId);
-    const dmgMult = (1.0 + (loop * 0.22)) * (1.0 + (this.vaultGreedCount * 0.05));
-    const speedMult = 1.0 + Math.min(0.35, loop * 0.05);
-    const eliteBonus = Math.min(0.40, loop * 0.06);
-
     if (sectorId === 'void_dimension') {
       this.chests = [];
       this.puzzles = [];
@@ -953,11 +965,9 @@ export class SampoGame {
       // Initialize Puzzle Pillars with realm-specific incantations
       this.puzzles = this.world.puzzlePoints.map(pp => new RunicPuzzlePillar(pp.x, pp.y, sectorId));
 
-      // Initialize Void Spawner Gateways (scaled durability)
+      // Initialize Void Spawner Gateways (scaled durability and minion rate with loop)
       this.gateways = this.world.gatewayPoints.map(gp => {
-        const gw = new VoidGateway(gp.x, gp.y, sectorId, effectiveLootLevel);
-        gw.health = Math.round(gw.health * (1.0 + loop * 0.30));
-        gw.maxHealth = gw.health;
+        const gw = new VoidGateway(gp.x, gp.y, sectorId, effectiveLootLevel, loop);
         return gw;
       });
 
@@ -966,12 +976,15 @@ export class SampoGame {
         Math.hypot(esp.x - this.world!.spawnPoint.x, esp.y - this.world!.spawnPoint.y) > 15.0
       );
 
+      const baseEnemyLevel = Math.max(1, (this.world!.biome.recommendedLevel || 1) + loop * 3);
+
       this.enemies = safeEnemySpawns.map(esp => {
         const ep = this.world!.biome.enemyPool[esp.enemyTypeIndex] || this.world!.biome.enemyPool[0];
         const isElite = esp.isElite || Math.random() < (0.12 + eliteBonus);
-        const enemyHealth = Math.round(ep.health * diffMult * (isElite ? 1.4 : 1.0));
-        const enemyDamage = Math.round(ep.damage * dmgMult * (isElite ? 1.2 : 1.0));
-        const enemySpeed = ep.speed * speedMult * (isElite ? 1.08 : 1.0);
+        const enemyHealth = Math.round(ep.health * diffMult * (isElite ? 1.45 : 1.0));
+        const enemyDamage = Math.round(ep.damage * dmgMult * (isElite ? 1.25 : 1.0));
+        const enemySpeed = ep.speed * speedMult * (isElite ? 1.10 : 1.0);
+        const enemyLevel = baseEnemyLevel + (isElite ? 2 : 0);
 
         const enemy = new Enemy(
           ep.type,
@@ -985,7 +998,8 @@ export class SampoGame {
           ep.ranged,
           ep.isMech,
           false,
-          isElite
+          isElite,
+          enemyLevel
         );
 
         // Later sectors, loops, and elites possess energy barrier shielding:
@@ -999,6 +1013,54 @@ export class SampoGame {
 
         return enemy;
       });
+
+      // On next rounds (loop > 0), spawn additional roaming patrols and ambush packs
+      if (loop > 0) {
+        const extraPacks = loop * 3;
+        const eligibleRooms = this.world.rooms.filter(r => r.type !== 'spawn' && r.type !== 'boss');
+        for (let p = 0; p < extraPacks; p++) {
+          if (eligibleRooms.length === 0) break;
+          const targetRoom = eligibleRooms[Math.floor(Math.random() * eligibleRooms.length)];
+          const packSize = 2 + Math.floor(Math.random() * (2 + loop));
+          for (let pe = 0; pe < packSize; pe++) {
+            const rx = targetRoom.x + 1 + Math.floor(Math.random() * Math.max(1, targetRoom.w - 2));
+            const ry = targetRoom.y + 1 + Math.floor(Math.random() * Math.max(1, targetRoom.h - 2));
+            if (
+              rx >= 1 && rx < this.world.width - 1 &&
+              ry >= 1 && ry < this.world.height - 1 &&
+              this.world.tiles[ry][rx] === TileType.FLOOR &&
+              Math.hypot(rx - this.world.spawnPoint.x, ry - this.world.spawnPoint.y) > 15.0
+            ) {
+              const ep = this.world.biome.enemyPool[Math.floor(Math.random() * this.world.biome.enemyPool.length)];
+              const isElite = Math.random() < (0.16 + eliteBonus);
+              const roamerHealth = Math.round(ep.health * diffMult * (isElite ? 1.45 : 1.0));
+              const roamerDamage = Math.round(ep.damage * dmgMult * (isElite ? 1.25 : 1.0));
+              const roamerSpeed = ep.speed * speedMult * (isElite ? 1.10 : 1.0);
+              const enemy = new Enemy(
+                `roamer_${p}_${pe}_${ep.type}`,
+                isElite ? `Vanguard Patrol ${ep.name}` : `Patrol ${ep.name}`,
+                rx,
+                ry,
+                roamerHealth,
+                roamerSpeed,
+                roamerDamage,
+                isElite ? '#f59e0b' : ep.color,
+                ep.ranged,
+                ep.isMech,
+                false,
+                isElite,
+                baseEnemyLevel + (isElite ? 2 : 0)
+              );
+              if (isElite || Math.random() < 0.35) {
+                enemy.isShielded = true;
+                enemy.maxShield = Math.round(roamerHealth * 0.45);
+                enemy.shield = enemy.maxShield;
+              }
+              this.enemies.push(enemy);
+            }
+          }
+        }
+      }
 
       // Boss is NOT spawned at start — Player must hunt Symbol-Carriers and decipher the Ancient Monolith to awaken the Boss!
       this.boss = null;
@@ -1036,11 +1098,11 @@ export class SampoGame {
 
     // Reset Objectives, Swarm Director & Escape State
     this.kills = 0;
-    this.targetKills = Math.min(16, Math.max(8, Math.floor(this.enemies.length * 0.5)));
+    this.targetKills = Math.min(35, Math.max(8, Math.floor(this.enemies.length * 0.45) + loop * 2));
     this.puzzleDone = false;
     this.bossDone = false;
 
-    this.swarmTimer = 28 + Math.random() * 12;
+    this.swarmTimer = Math.max(14, 28 + Math.random() * 10 - loop * 3.5);
     this.activeSwarmEnemies = [];
     this.swarmWaveCount = 0;
 
@@ -1064,15 +1126,15 @@ export class SampoGame {
       heroStartY: 0
     };
 
-    this.hud.setSector(this.world.biome, loop, diffMult);
+    this.hud.setSector(this.world.biome, loop, diffMult, this.enemies.length);
     soundEngine.startBackgroundMusic(sectorId);
 
     // Tactical Event Log
     this.hud.addLog(`🗺️ Sector Topology: ${this.world.layoutDisplayName}`, 'system');
     if (sectorId === 'void_dimension') {
-      this.hud.addLog(`✦ ENTERED THE EMPTY VOID: Wall-free arena! Defeat the 6 Boss Incarnations and the Final Void Overlord!`, 'level');
+      this.hud.addLog(`✦ ENTERED THE EMPTY VOID: Wall-free arena! Slay the 6 Boss Incarnations and the Final Void Overlord!`, 'level');
     } else if (loop > 0) {
-      this.hud.addLog(`🔥 OVERDRIVE LOOP ${loop + 1}: ${this.world.biome.name} [Hardness x${diffMult.toFixed(2)}]`, 'rune');
+      this.hud.addLog(`🔥 OVERDRIVE ROUND ${loop + 1}: ${this.world.biome.name} [Hardness x${diffMult.toFixed(2)} • +${Math.round(loop * 35)}% Enemies]`, 'rune');
       this.hud.addLog(`Bounties: +${Math.round(loop * 30)}% Scrap, +${Math.round(loop * 25)}% XP per kill`, 'loot');
     } else {
       this.hud.addLog(`Deployed into ${this.world.biome.name} (Stage 0${this.world.biome.order})`, 'system');
@@ -1388,14 +1450,27 @@ export class SampoGame {
     if (!this.world || !this.player || this.boss || this.bossDone) return;
 
     const loop = this.getSectorLoop(this.currentSectorId);
-    const diffMult = this.getDifficultyMultiplier(this.currentSectorId);
+    const diffMult = this.getDifficultyMultiplier(this.currentSectorId, this.sectorRunTime);
     const greedMult = 1.0 + (this.vaultGreedCount * 0.05);
-    const dmgMult = (1.0 + loop * 0.35) * greedMult;
+    const timeFactor = 1.0 + (this.sectorRunTime / 60) * 0.05;
+    const dmgMult = (1.0 + loop * 0.35) * greedMult * timeFactor;
 
     const bDef = this.world.biome.boss;
-    const bossHealth = Math.round(bDef.maxHealth * (1.0 + loop * 0.35) * greedMult);
-    const bossDamage = Math.round((10 + this.world.biome.order * 3.2) * dmgMult);
-    const bossSpeed = 1.55 * (1.0 + Math.min(0.20, loop * 0.04));
+    // Calculate boss start level (boosted start levels for final bosses)
+    const baseBossLevel = this.world.biome.recommendedLevel ? (this.world.biome.recommendedLevel + 4) : 12;
+    const bossLevel = baseBossLevel + loop * 5 + Math.floor(this.sectorRunTime / 90);
+
+    const bossHealth = Math.round(bDef.maxHealth * diffMult);
+    
+    // Scale boss damage appropriately so final bosses hit with devastating cosmic force
+    let baseBossDmg = 18 + bossLevel * 2.8;
+    if (this.world.biome.order >= 4) baseBossDmg += 14;
+    if (this.world.biome.order >= 5) baseBossDmg += 24;
+    if (this.world.biome.order >= 6) baseBossDmg += 38;
+    if (this.currentSectorId === 'void_dimension') baseBossDmg += 55;
+
+    const bossDamage = Math.round(baseBossDmg * dmgMult);
+    const bossSpeed = 1.60 * (1.0 + Math.min(0.30, loop * 0.05 + (this.sectorRunTime / 300) * 0.04));
 
     // Spawn point: Safe 7-8 tile offset from monolith so player has room to maneuver
     let spawnX = sourceX !== undefined ? sourceX + (Math.random() > 0.5 ? 7.0 : -7.0) : (this.world.bossPoint ? this.world.bossPoint.x : this.player.x + 7.0);
@@ -1416,12 +1491,14 @@ export class SampoGame {
       true,
       true,
       true,
-      false
+      false,
+      bossLevel
     );
     const sectorOrder = this.world?.biome?.order || 1;
     if (loop > 0 || sectorOrder >= 2) {
       this.boss.isShielded = true;
-      this.boss.maxShield = Math.round(bossHealth * (loop > 0 ? 0.45 : 0.30));
+      const shieldRatio = sectorOrder >= 5 ? (loop > 0 ? 0.60 : 0.45) : (loop > 0 ? 0.45 : 0.30);
+      this.boss.maxShield = Math.round(bossHealth * shieldRatio);
       this.boss.shield = this.boss.maxShield;
     }
     // Initial telegraph / breathing room for player when boss awakens
@@ -1463,7 +1540,7 @@ export class SampoGame {
 
     combatEngine.addFloatingText(spawnX, spawnY, `👑 ${bDef.name.toUpperCase()} AWAKENED! 👑`, 'crit');
     this.hud.addLog(`🚨 REALM GUARDIAN AWAKENED: ${this.boss.name}! Monolith containment shattered into open Colosseum!`, 'alert');
-    this.hud.showBossBar(this.boss.name, bDef.title);
+    this.hud.showBossBar(this.boss.name, bDef.title, bossLevel);
     this.hud.updateBossHealth(bossHealth, bossHealth);
     this.hud.hideMonolithNavigation();
 
@@ -1665,9 +1742,11 @@ export class SampoGame {
     const def = this.OMEGA_BOSS_DEFINITIONS[index];
     if (!def) return;
 
-    const diffMult = this.getDifficultyMultiplier(this.currentSectorId);
+    const loop = this.getSectorLoop('void_dimension');
+    const diffMult = this.getDifficultyMultiplier(this.currentSectorId, this.sectorRunTime);
     const hp = Math.round(def.health * diffMult);
     const dmg = Math.round(def.damage * diffMult);
+    const bossLevel = def.level + loop * 5 + Math.floor(this.sectorRunTime / 90);
 
     const spawnAng = Math.random() * Math.PI * 2;
     let bx = this.player.x + Math.cos(spawnAng) * 7.5;
@@ -1687,8 +1766,15 @@ export class SampoGame {
       def.ranged,
       true,
       true,
-      false
+      false,
+      bossLevel
     );
+
+    if (index >= 2 || loop > 0) {
+      newBoss.isShielded = true;
+      newBoss.maxShield = Math.round(hp * (index >= 5 ? 0.50 : 0.35));
+      newBoss.shield = newBoss.maxShield;
+    }
 
     this.boss = newBoss;
     this.enemies = [newBoss];
@@ -1703,9 +1789,9 @@ export class SampoGame {
       particleSystem.emitPixelGlitch(bx + (Math.random() - 0.5) * 8, by + (Math.random() - 0.5) * 8, def.color);
     }
 
-    combatEngine.addFloatingText(bx, by, `★ INCARNATION ${index + 1}/7: ${def.name} ★`, 'crit');
-    this.hud.addLog(`⚔️ VOID AWAKENING: [${index + 1}/7] ${def.name} materialized in the Void!`, 'alert');
-    this.hud.showBossBar(def.name, def.subtitle);
+    combatEngine.addFloatingText(bx, by, `★ INCARNATION ${index + 1}/7 [LVL ${bossLevel}]: ${def.name} ★`, 'crit');
+    this.hud.addLog(`⚔️ VOID AWAKENING: [${index + 1}/7 - LVL ${bossLevel}] ${def.name} materialized in the Void!`, 'alert');
+    this.hud.showBossBar(def.name, def.subtitle, bossLevel);
     this.hud.updateBossHealth(hp, hp);
   }
 
@@ -1801,11 +1887,14 @@ export class SampoGame {
     if (!this.player || !this.world || this.bossDone || this.escapeSequenceActive || this.isStage6BossRushActive || this.currentSectorId === 'void_dimension') return;
 
     const loop = this.getSectorLoop(this.currentSectorId);
-    const diffMult = this.getDifficultyMultiplier(this.currentSectorId);
-    const dmgMult = (1.0 + (loop * 0.22)) * (1.0 + (this.vaultGreedCount * 0.05));
-    const speedMult = 1.0 + Math.min(0.35, loop * 0.05);
+    const timeFactor = 1.0 + (this.sectorRunTime / 60) * 0.05;
+    const diffMult = this.getDifficultyMultiplier(this.currentSectorId, this.sectorRunTime);
+    const dmgMult = (1.0 + (loop * 0.28)) * timeFactor * (1.0 + (this.vaultGreedCount * 0.05));
+    const speedMult = 1.0 + Math.min(0.45, loop * 0.07 + (this.sectorRunTime / 300) * 0.04);
 
-    const waveSize = 5 + Math.floor(Math.random() * 4) + Math.min(3, this.world.biome.order) + Math.min(5, loop * 2);
+    const timeSwarmBonus = Math.floor(this.sectorRunTime / 45); // +1 hostiles per 45s run time
+    const roundSwarmBonus = loop * 3; // +3 hostiles per round
+    const waveSize = 5 + Math.floor(Math.random() * 4) + Math.min(4, this.world.biome.order) + roundSwarmBonus + timeSwarmBonus;
     const px = this.player.x;
     const py = this.player.y;
     const baseAngle = Math.random() * Math.PI * 2;
@@ -1817,6 +1906,8 @@ export class SampoGame {
       if (gx < 0 || gx >= this.world!.width || gy < 0 || gy >= this.world!.height) return true;
       return this.world!.tiles[gy][gx] === TileType.WALL;
     };
+
+    const baseEnemyLevel = Math.max(1, (this.world.biome.recommendedLevel || 1) + loop * 3);
 
     for (let i = 0; i < waveSize; i++) {
       const angle = baseAngle + (Math.random() - 0.5) * 1.2;
@@ -1847,20 +1938,22 @@ export class SampoGame {
       const enemyPool = this.world.biome.enemyPool;
       const ep = enemyPool[Math.floor(Math.random() * enemyPool.length)];
       const isElite = Math.random() < (0.25 + Math.min(0.35, loop * 0.06));
+      const swarmEnemyLevel = baseEnemyLevel + 1 + (isElite ? 2 : 0) + Math.floor(this.sectorRunTime / 60);
 
       const swarmEnemy = new Enemy(
         `swarm_${this.swarmWaveCount}_${i}_${Math.random().toString(36).substring(2, 6)}`,
         isElite ? (loop > 0 ? `Overdrive Vanguard Elite ${ep.name}` : `Vanguard Elite ${ep.name}`) : `Vanguard ${ep.name}`,
         sx,
         sy,
-        Math.round(ep.health * diffMult * (isElite ? 1.4 : 0.95)),
+        Math.round(ep.health * diffMult * (isElite ? 1.45 : 0.95)),
         ep.speed * 1.4 * speedMult, // Faster rush speed!
         Math.round(ep.damage * 1.25 * dmgMult),
         isElite ? '#f59e0b' : ep.color,
         ep.ranged,
         ep.isMech,
         false,
-        isElite
+        isElite,
+        swarmEnemyLevel
       );
 
       swarmEnemy.isSwarm = true; // Persistent hunter aggro!
@@ -2260,7 +2353,11 @@ export class SampoGame {
     const nextBiome = SAGA_PATH[currentIndex + 1];
     const totalClears = this.sectorClears[this.currentSectorId] || 1;
     const nextLoopTier = totalClears + 1;
-    const nextDiffMult = 1.0 + (totalClears * 0.35);
+    const nextDiffMult = 1.0 + (totalClears * 0.40);
+    const nextEnemyBonus = Math.round(totalClears * 35);
+    const runMins = Math.floor(this.sectorRunTime / 60);
+    const runSecs = Math.floor(this.sectorRunTime % 60);
+    const runTimeFormatted = `${runMins}m ${runSecs.toString().padStart(2, '0')}s`;
 
     this.victoryModalEl = document.createElement('div');
     this.victoryModalEl.id = 'victory-modal';
@@ -2353,10 +2450,10 @@ export class SampoGame {
         ">
           <div>
             <div style="font-family:var(--font-mono); font-size:11px; color:#fde047; font-weight:700; letter-spacing:1px;">
-              🔥 REALM OVERDRIVE MASTERY LEVEL ${totalClears}
+              🔥 REALM ROUND ${totalClears} CONQUERED (EXPEDITION TIME: ${runTimeFormatted})
             </div>
             <div style="font-family:var(--font-rune); font-size:14px; color:#ffffff; margin-top:2px;">
-              Loop ${nextLoopTier} Unlocked (Hardness Multiplier: <span style="color:#f87171; font-weight:700;">x${nextDiffMult.toFixed(2)}</span>)
+              Round ${nextLoopTier} Escalation: Hardness <span style="color:#f87171; font-weight:700;">x${nextDiffMult.toFixed(2)}</span> • Hostiles <span style="color:#f87171; font-weight:700;">+${nextEnemyBonus}%</span>
             </div>
           </div>
           <div style="font-family:var(--font-mono); font-size:11px; color:#67e8f9; text-align:right;">
@@ -2429,7 +2526,7 @@ export class SampoGame {
                  </button>`
           }
           <button id="btn-replay-overdrive" class="sampo-btn" style="padding:10px 20px; font-size:13px; border-color:#f59e0b; color:#fde047; cursor: pointer; pointer-events: auto;">
-            ${this.currentSectorId === 'void_dimension' ? '🔥 REPLAY VOID CLIMAX' : `🔥 REPLAY OVERDRIVE (LOOP ${nextLoopTier})`}
+            ${this.currentSectorId === 'void_dimension' ? `🔥 REPLAY VOID CLIMAX (ROUND ${nextLoopTier}: x${nextDiffMult.toFixed(2)})` : `🔥 ADVANCE TO ROUND ${nextLoopTier} (x${nextDiffMult.toFixed(2)} • +${nextEnemyBonus}% HOSTILES)`}
           </button>
           <button id="btn-return-map" class="sampo-btn" style="padding:10px 18px; font-size:13px; cursor: pointer; pointer-events: auto;">
             🗺️ SAGA MAP
@@ -2739,6 +2836,9 @@ export class SampoGame {
       this.camera.update(dt);
       return;
     }
+
+    // Accumulate elapsed expedition run time
+    this.sectorRunTime += dt;
 
     // 1. Player Input & Aiming
     const mouseWorld = this.camera.screenToWorld(inputManager.mouseScreen.x, inputManager.mouseScreen.y);
@@ -3489,7 +3589,8 @@ export class SampoGame {
         title: this.world.biome.boss.title,
         health: this.boss.health,
         maxHealth: this.boss.maxHealth,
-        isDead: this.boss.isDead
+        isDead: this.boss.isDead,
+        level: this.boss.level
       } : undefined,
       {
         puzzleDone: this.puzzleDone,
@@ -3497,7 +3598,11 @@ export class SampoGame {
         targetKills: this.targetKills,
         bossDone: this.bossDone,
         shardsCollected: primaryPuzzle ? primaryPuzzle.getCollectedShardsCount() : 0,
-        totalShards: 4
+        totalShards: 4,
+        runTime: this.sectorRunTime,
+        loop: this.getSectorLoop(this.currentSectorId),
+        diffMult: this.getDifficultyMultiplier(this.currentSectorId, this.sectorRunTime),
+        activeEnemies: this.enemies.filter(e => !e.isDead).length
       }
     );
 

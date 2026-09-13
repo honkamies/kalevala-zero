@@ -274,8 +274,9 @@ export class MainMenuUI {
     const isCleared = this.clearedSectors.includes(biome.id);
     const isCurrent = isUnlocked && !isCleared;
     const clears = this.sectorClears[biome.id] || 0;
-    const diffMult = 1.0 + (clears * 0.35);
+    const diffMult = 1.0 + (clears * 0.40);
     const loopLevel = clears + 1;
+    const enemyDensityBonus = Math.round(clears * 35);
 
     const bgImg = this.biomeImages[biome.id] || './assets/carousel_ilman_luominen.jpg';
     const bossImg = this.bossImages[biome.id] || './assets/thumb_boss_sotka.jpg';
@@ -305,10 +306,10 @@ export class MainMenuUI {
         <div class="card-top-chips">
           <div class="chip-tier">${tierBadge}</div>
           <div class="chip-status-group">
-            <span class="chip-level">REC. LVL ${biome.recommendedLevel}</span>
+            <span class="chip-level">REC. LVL ${biome.recommendedLevel + (clears * 3)}</span>
             ${clears > 0 ? `
               <span style="background:rgba(245,158,11,0.22); border:1px solid #f59e0b; color:#fde047; font-family:var(--font-mono); font-size:11px; font-weight:700; padding:3px 8px; border-radius:4px; letter-spacing:1px; text-shadow:0 0 8px rgba(245,158,11,0.8);">
-                🔥 LOOP ${loopLevel} (x${diffMult.toFixed(2)})
+                🔥 ROUND ${loopLevel} (x${diffMult.toFixed(2)} • +${enemyDensityBonus}% HOSTILES)
               </span>
             ` : ''}
             <span class="chip-badge ${isCleared ? 'cleared' : isCurrent ? 'current' : isUnlocked ? 'unlocked' : 'locked'}">
@@ -338,7 +339,7 @@ export class MainMenuUI {
             font-size: 11px;
             margin: -6px 0 8px 0;
           ">
-            <span style="color:#fcd34d; font-weight:700;">🔥 OVERDRIVE TIER ${clears}: x${diffMult.toFixed(2)} HARDNESS (HP & DMG)</span>
+            <span style="color:#fcd34d; font-weight:700;">🔥 ROUND ${loopLevel} ESCALATION: x${diffMult.toFixed(2)} HARDNESS • +${enemyDensityBonus}% ENEMIES</span>
             <span style="color:#67e8f9;">💰 +${Math.round(clears * 30)}% SCRAP • ⚡ +${Math.round(clears * 25)}% XP</span>
           </div>
         ` : ''}
@@ -388,7 +389,7 @@ export class MainMenuUI {
         <div class="card-action-footer" style="display:flex; gap:12px; align-items:center;">
           ${isUnlocked ? `
             <button id="btn-deploy-realm" class="sampo-btn primary large ${isCurrent || clears > 0 ? 'pulsing-deploy' : ''}" style="flex:1;">
-              ${clears > 0 ? `🔥 DEPLOY OVERDRIVE (LOOP ${loopLevel} • x${diffMult.toFixed(2)})` : isCleared ? '🔄 REPLAY EXPEDITION' : '⚔️ DEPLOY EXPEDITION'}
+              ${clears > 0 ? `🔥 DEPLOY ROUND ${loopLevel} (x${diffMult.toFixed(2)} • +${enemyDensityBonus}% ENEMIES)` : isCleared ? '🔄 REPLAY EXPEDITION' : '⚔️ DEPLOY EXPEDITION'}
               <span class="btn-subtext">[PRESS ENTER]</span>
             </button>
           ` : `

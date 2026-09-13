@@ -62,6 +62,12 @@ export class HUD {
           <div class="sector-badge">
             <div class="sector-name" id="hud-sector-name">ILMAN LUOMINEN</div>
             <div class="sector-sub" id="hud-sector-sub">Ilmattaren Aallot & Sotkan Muna</div>
+            <div id="hud-sector-telemetry" style="display:flex; flex-wrap:wrap; gap:8px; font-family:var(--font-mono); font-size:10px; color:#38bdf8; margin-top:5px; border-top:1px solid rgba(56,189,248,0.2); padding-top:4px;">
+              <span id="hud-telemetry-time" style="color:#fde047; font-weight:700;">⏱️ 00:00</span>
+              <span id="hud-telemetry-round" style="color:#f59e0b; font-weight:700;">ROUND 1</span>
+              <span id="hud-telemetry-hardness" style="color:#f87171; font-weight:700;">HARDNESS x1.00</span>
+              <span id="hud-telemetry-enemies" style="color:#6ee7b7;">👾 0 HOSTILES</span>
+            </div>
           </div>
 
           <div id="objective-tracker">
@@ -344,8 +350,19 @@ export class HUD {
   update(
     player: Player,
     biome: BiomeDefinition,
-    boss?: { name: string; title: string; health: number; maxHealth: number; isDead: boolean },
-    objectives?: { puzzleDone: boolean; kills: number; targetKills: number; bossDone: boolean; shardsCollected?: number; totalShards?: number }
+    boss?: { name: string; title: string; health: number; maxHealth: number; isDead: boolean; level?: number },
+    objectives?: {
+      puzzleDone: boolean;
+      kills: number;
+      targetKills: number;
+      bossDone: boolean;
+      shardsCollected?: number;
+      totalShards?: number;
+      runTime?: number;
+      loop?: number;
+      diffMult?: number;
+      activeEnemies?: number;
+    }
   ) {
     // Vitals
     const hpPct = Math.max(0, Math.min(100, (player.health / player.maxHealth) * 100));
@@ -423,7 +440,11 @@ export class HUD {
     // Boss Bar
     if (boss && !boss.isDead) {
       this.bossBarEl.style.display = 'block';
-      this.bossNameEl.textContent = boss.name.toUpperCase();
+      if (boss.level && boss.level > 0) {
+        this.bossNameEl.innerHTML = `<span style="display:inline-block; font-size:11px; font-weight:800; color:#0f172a; background:#f59e0b; border-radius:3px; padding:1px 6px; margin-right:6px; letter-spacing:1px; vertical-align:middle; text-shadow:none;">LVL ${boss.level}</span>${boss.name.toUpperCase()}`;
+      } else {
+        this.bossNameEl.textContent = boss.name.toUpperCase();
+      }
       this.bossSubEl.textContent = boss.title.toUpperCase();
       const bossHpPct = Math.max(0, Math.min(100, (boss.health / boss.maxHealth) * 100));
       this.bossHpFillEl.style.width = `${bossHpPct}%`;
@@ -431,8 +452,28 @@ export class HUD {
       this.bossBarEl.style.display = 'none';
     }
 
-    // Objectives
+    // Objectives & Dynamic Run Telemetry
     if (objectives) {
+      const timeEl = document.getElementById('hud-telemetry-time');
+      const roundEl = document.getElementById('hud-telemetry-round');
+      const hardEl = document.getElementById('hud-telemetry-hardness');
+      const hostilesEl = document.getElementById('hud-telemetry-enemies');
+
+      if (timeEl && objectives.runTime !== undefined) {
+        const mins = Math.floor(objectives.runTime / 60);
+        const secs = Math.floor(objectives.runTime % 60);
+        timeEl.textContent = `⏱️ ${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+      }
+      if (roundEl && objectives.loop !== undefined) {
+        roundEl.textContent = `ROUND ${objectives.loop + 1}`;
+      }
+      if (hardEl && objectives.diffMult !== undefined) {
+        hardEl.textContent = `HARDNESS x${objectives.diffMult.toFixed(2)}`;
+      }
+      if (hostilesEl && objectives.activeEnemies !== undefined) {
+        hostilesEl.textContent = `👾 ${objectives.activeEnemies} HOSTILES`;
+      }
+
       const chkPuz = document.getElementById('chk-puzzle');
       const shardTrackerEl = document.getElementById('puzzle-shard-tracker');
       if (shardTrackerEl && objectives.shardsCollected !== undefined) {
@@ -470,12 +511,18 @@ export class HUD {
     }
   }
 
-  showBossBar(name: string, sub: string) {
+  showBossBar(name: string, sub: string, level?: number) {
     if (!this.bossBarEl) this.bossBarEl = document.getElementById('boss-bar-container')!;
     if (!this.bossNameEl) this.bossNameEl = document.getElementById('boss-display-name')!;
     if (!this.bossSubEl) this.bossSubEl = document.getElementById('boss-display-sub')!;
     if (this.bossBarEl) this.bossBarEl.style.display = 'block';
-    if (this.bossNameEl) this.bossNameEl.textContent = name.toUpperCase();
+    if (this.bossNameEl) {
+      if (level && level > 0) {
+        this.bossNameEl.innerHTML = `<span style="display:inline-block; font-size:11px; font-weight:800; color:#0f172a; background:#f59e0b; border-radius:3px; padding:1px 6px; margin-right:6px; letter-spacing:1px; vertical-align:middle; text-shadow:none;">LVL ${level}</span>${name.toUpperCase()}`;
+      } else {
+        this.bossNameEl.textContent = name.toUpperCase();
+      }
+    }
     if (this.bossSubEl) this.bossSubEl.textContent = sub.toUpperCase();
   }
 
@@ -501,23 +548,29 @@ export class HUD {
     }
   }
 
-  setSector(biome: BiomeDefinition, loopCount: number = 0, diffMult: number = 1.0) {
+  setSector(biome: BiomeDefinition, loopCount: number = 0, diffMult: number = 1.0, enemyCount: number = 0) {
     const nameEl = document.getElementById('hud-sector-name');
     const subEl = document.getElementById('hud-sector-sub');
     if (nameEl) {
       if (loopCount > 0) {
-        nameEl.innerHTML = `${biome.name.toUpperCase()} <span style="display:inline-block; font-size:11px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.15); border:1px solid #f59e0b; border-radius:4px; padding:1px 6px; margin-left:6px; letter-spacing:1px; vertical-align:middle; text-shadow:0 0 8px rgba(245,158,11,0.8);">🔥 LOOP ${loopCount + 1} (x${diffMult.toFixed(2)})</span>`;
+        nameEl.innerHTML = `${biome.name.toUpperCase()} <span style="display:inline-block; font-size:11px; font-weight:700; color:#f59e0b; background:rgba(245,158,11,0.15); border:1px solid #f59e0b; border-radius:4px; padding:1px 6px; margin-left:6px; letter-spacing:1px; vertical-align:middle; text-shadow:0 0 8px rgba(245,158,11,0.8);">🔥 ROUND ${loopCount + 1} (x${diffMult.toFixed(2)})</span>`;
       } else {
         nameEl.textContent = biome.name.toUpperCase();
       }
     }
     if (subEl) {
       if (loopCount > 0) {
-        subEl.textContent = `${biome.subtitle} • Hardness x${diffMult.toFixed(2)} (+${Math.round(loopCount * 30)}% Scrap, +${Math.round(loopCount * 25)}% XP)`;
+        subEl.textContent = `${biome.subtitle} • Hardness x${diffMult.toFixed(2)} (+${Math.round(loopCount * 35)}% Enemies, +${Math.round(loopCount * 30)}% Scrap)`;
       } else {
         subEl.textContent = `${biome.subtitle}`;
       }
     }
+    const roundEl = document.getElementById('hud-telemetry-round');
+    const hardEl = document.getElementById('hud-telemetry-hardness');
+    const hostilesEl = document.getElementById('hud-telemetry-enemies');
+    if (roundEl) roundEl.textContent = `ROUND ${loopCount + 1}`;
+    if (hardEl) hardEl.textContent = `HARDNESS x${diffMult.toFixed(2)}`;
+    if (hostilesEl) hostilesEl.textContent = `👾 ${enemyCount} HOSTILES`;
   }
 
   showSwarmAlert(count: number, biomeName: string) {
