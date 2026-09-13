@@ -2601,6 +2601,20 @@ export class IsometricRenderer {
         }
       }
 
+      if (enemy.isOverclocked || ((enemy.type.includes('aegis') || enemy.type.includes('overclock')) && enemy.hadShield && (!enemy.shield || enemy.shield <= 0))) {
+        // High-Speed Crimson Thruster Afterimages during Overclock Berserk Frenzy
+        for (let a = 1; a <= 2; a++) {
+          const trailDist = a * 10 * z;
+          const trailX = (isFacingLeft ? -lungeX : lungeX) - spriteSize / 2 - (isFacingLeft ? -1 : 1) * Math.cos(enemy.angle) * trailDist;
+          const trailY = heightOffset - spriteSize / 2 - Math.sin(enemy.angle) * (trailDist * 0.5);
+          ctx.save();
+          ctx.globalAlpha = 0.42 / a;
+          ctx.filter = 'hue-rotate(150deg) saturate(2.2) brightness(1.25)';
+          ctx.drawImage(spriteCanvas, trailX, trailY, spriteSize, spriteSize);
+          ctx.restore();
+        }
+      }
+
       if (enemy.hurtFlashTimer > 0) {
         ctx.save();
         ctx.filter = 'brightness(2.6) contrast(1.3)';
@@ -2612,20 +2626,57 @@ export class IsometricRenderer {
       ctx.restore();
     }
 
-    // 5.5. Energy Shield Barrier Dome (Visual shield aura)
+    // 5.5. Fortified Energy Shield Barrier Dome (Visual shield aura)
     if (enemy.isShielded || (enemy.shield && enemy.shield > 0)) {
       const shieldTime = performance.now() * 0.004;
-      const shieldPulse = 1.0 + Math.sin(shieldTime) * 0.06;
-      const sRadius = (baseSize * 1.15) * shieldPulse;
+      const shieldPulse = 1.0 + Math.sin(shieldTime * 2.5) * 0.05;
+      const sRadius = (baseSize * 1.20) * shieldPulse;
       ctx.save();
       ctx.beginPath();
       ctx.arc(lungeX, heightOffset, sRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
-      ctx.lineWidth = 2.0 * z;
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
+      ctx.lineWidth = 2.4 * z;
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
       ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 12;
+      ctx.shadowBlur = 14;
       ctx.stroke();
+      ctx.fill();
+
+      // Orbiting energetic deflection arcs around the barrier
+      const arcAng = shieldTime * 2.2;
+      ctx.beginPath();
+      ctx.arc(lungeX, heightOffset, sRadius + 2.0 * z, arcAng, arcAng + Math.PI * 0.55);
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.85)';
+      ctx.lineWidth = 1.8 * z;
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.arc(lungeX, heightOffset, sRadius + 2.0 * z, arcAng + Math.PI, arcAng + Math.PI * 1.55);
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.85)';
+      ctx.lineWidth = 1.8 * z;
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // 5.6. Overclock Berserk Thruster Aura (Crimson superheated speed ring when shield is down)
+    if (enemy.isOverclocked || ((enemy.type.includes('aegis') || enemy.type.includes('overclock')) && enemy.hadShield && (!enemy.shield || enemy.shield <= 0))) {
+      const oTime = performance.now() * 0.008;
+      ctx.save();
+      ctx.beginPath();
+      ctx.ellipse(lungeX, heightOffset + 2 * z, baseSize * 1.1, baseSize * 0.55, 0, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.22)';
+      ctx.shadowColor = '#ef4444';
+      ctx.shadowBlur = 16;
+      ctx.fill();
+
+      // Spinning crimson speed sparks
+      const sparkAng = oTime * 3.0;
+      ctx.beginPath();
+      ctx.arc(lungeX + Math.cos(sparkAng) * baseSize * 0.9, heightOffset + Math.sin(sparkAng) * baseSize * 0.45, 3.0 * z, 0, Math.PI * 2);
+      ctx.fillStyle = '#fca5a5';
+      ctx.shadowColor = '#f43f5e';
+      ctx.shadowBlur = 8;
       ctx.fill();
       ctx.restore();
     }

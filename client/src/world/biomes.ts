@@ -77,6 +77,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     enemyPool: [
       { type: 'proto_wisp', name: 'Ilman Kipinä (Genesis Spark)', health: 50, speed: 2.4, damage: 16, color: '#93c5fd', ranged: true, isMech: false },
       { type: 'aava_glider', name: 'Primordial Wave Glider', health: 75, speed: 2.2, damage: 20, color: '#60a5fa', ranged: false, isMech: true },
+      { type: 'aegis_overclocker', name: 'Kilpi-Ylikuormittaja (Aegis Overclocker)', health: 110, speed: 2.3, damage: 22, color: '#38bdf8', ranged: true, isMech: true },
       { type: 'sotka_scout', name: 'Goldeneye Sentry Drone', health: 85, speed: 2.9, damage: 24, color: '#fcd34d', ranged: true, isMech: true },
       { type: 'sotka_seeker', name: 'Sotka Homing Seeker', health: 70, speed: 2.1, damage: 18, color: '#fef08a', ranged: true, isMech: true },
       { type: 'aava_skimmer', name: 'Wave Skimmer Skiff', health: 90, speed: 3.1, damage: 22, color: '#67e8f9', ranged: false, isMech: true },
@@ -116,6 +117,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     },
     enemyPool: [
       { type: 'hiisi_berserker', name: 'Hiisi Scrap Berserker', health: 110, speed: 2.4, damage: 26, color: '#f59e0b', ranged: false, isMech: false },
+      { type: 'aegis_overclocker', name: 'Hiisi Aegis Overclocker', health: 140, speed: 2.3, damage: 26, color: '#38bdf8', ranged: true, isMech: true },
       { type: 'hiisi_tracker', name: 'Hiisi Dart Stalker (Homing Spores)', health: 130, speed: 2.5, damage: 28, color: '#a7f3d0', ranged: true, isMech: false },
       { type: 'tulipesä_broodmother', name: 'Hiisi Magma Broodmother Colossus', health: 320, speed: 1.7, damage: 38, color: '#ea580c', ranged: true, isMech: true },
       { type: 'spore_hound', name: 'Flesh-Metal Woodland Hound', health: 125, speed: 3.4, damage: 30, color: '#10b981', ranged: false, isMech: true },
@@ -157,6 +159,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     },
     enemyPool: [
       { type: 'frost_drone', name: 'Pohjola Recon Drone', health: 130, speed: 2.5, damage: 32, color: '#38bdf8', ranged: true, isMech: true },
+      { type: 'aegis_overclocker', name: 'Pohjola Cryo-Aegis Overclocker', health: 165, speed: 2.4, damage: 30, color: '#0ea5e9', ranged: true, isMech: true },
       { type: 'cryo_seeker', name: 'Pohjola Homing Ice-Drone', health: 160, speed: 2.4, damage: 35, color: '#7dd3fc', ranged: true, isMech: true },
       { type: 'tulipesä_broodmother', name: 'Frostfire Broodmother Titan', health: 360, speed: 1.75, damage: 44, color: '#0ea5e9', ranged: true, isMech: true },
       { type: 'cryo_sentry', name: 'Cryo-Augmented Sentry', health: 165, speed: 2.0, damage: 36, color: '#0284c7', ranged: false, isMech: false },
@@ -280,6 +283,7 @@ export const BIOMES: Record<string, BiomeDefinition> = {
     },
     enemyPool: [
       { type: 'celestial_sentinel', name: 'Solar Arc Drone', health: 260, speed: 2.7, damage: 54, color: '#fde68a', ranged: true, isMech: true },
+      { type: 'aegis_overclocker', name: 'Kirjokansi Aegis Vanguard', health: 290, speed: 2.5, damage: 58, color: '#fbbf24', ranged: true, isMech: true },
       { type: 'celestial_seeker', name: 'Kirjokansi Star-Missile Battery', health: 320, speed: 2.5, damage: 65, color: '#fde047', ranged: true, isMech: true },
       { type: 'ukko_herald', name: 'High-Voltage Runic Adept', health: 280, speed: 2.2, damage: 60, color: '#fbbf24', ranged: true, isMech: false },
       { type: 'solar_archon', name: 'Ukko Solar High Archon', health: 420, speed: 2.4, damage: 72, color: '#f59e0b', ranged: true, isMech: false },

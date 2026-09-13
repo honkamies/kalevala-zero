@@ -57,6 +57,8 @@ export class Enemy {
   public meleeHitDone: boolean = false;
   public isPouncing: boolean = false;
   public isShielded: boolean = false;
+  public hadShield: boolean = false;
+  public isOverclocked: boolean = false;
   public shield: number = 0;
   public maxShield: number = 0;
 
@@ -148,7 +150,14 @@ export class Enemy {
     }
 
     // Pick damage type based on enemy archetype
-    if (this.type.includes('frost') || this.type.includes('cryo') || this.type.includes('louhi')) {
+    if (this.type.includes('aegis') || this.type.includes('overclock')) {
+      this.damageType = 'plasma';
+      this.isRanged = true;
+      this.isShielded = true;
+      this.hadShield = true;
+      this.maxShield = Math.max(220, Math.round(this.maxHealth * (isElite ? 1.9 : 1.5)));
+      this.shield = this.maxShield;
+    } else if (this.type.includes('frost') || this.type.includes('cryo') || this.type.includes('louhi')) {
       this.damageType = 'frost';
     } else if (this.type.includes('shock') || this.type.includes('spark') || this.type.includes('marauder') || this.type.includes('sotka') || this.type.includes('ukko') || this.type.includes('sampo')) {
       this.damageType = 'shock';
@@ -258,8 +267,14 @@ export class Enemy {
 
     // State Execution & Smart Wall Sliding Navigation
     if (this.state === 'aggro') {
-      this.walkTimer += dt * 8.0;
-      const speedMultiplier = this.hasRuneShard ? 1.10 : (this.isSwarm ? 1.35 : (this.isPouncing ? 2.2 : 1.0));
+      this.walkTimer += dt * (this.isOverclocked ? 14.0 : 8.0);
+      let speedMultiplier = (this.shield > 0 ? 1.18 : 1.0) * (this.hasRuneShard ? 1.10 : (this.isSwarm ? 1.35 : (this.isPouncing ? 2.2 : 1.0)));
+      if (this.isOverclocked || ((this.type.includes('aegis') || this.type.includes('overclock')) && this.hadShield && this.shield <= 0)) {
+        speedMultiplier *= 2.0; // DOUBLE SPEED WHEN SHIELD IS DOWN!
+        if (Math.random() < 0.3) {
+          particleSystem.emitSparks(this.x, this.y, 0.25, '#f43f5e', 2);
+        }
+      }
       const currentSpeed = this.speed * speedMultiplier;
       const moveSpeed = currentSpeed * dt;
       const pad = this.radius * 0.5;
@@ -1102,6 +1117,50 @@ export class Enemy {
       return;
     }
 
+    // Aegis Overclocker: Tactical shielded sentry that enters 2x speed and rapid-fire overdrive when shield is down!
+    if (this.type.includes('aegis') || this.type.includes('overclock')) {
+      const isFrenzy = this.isOverclocked || (this.hadShield && this.shield <= 0);
+      this.attackCooldown = isFrenzy ? 0.38 : 1.45; // SHOOTS FAST (more than 3x normal rate!)
+      this.lungeTimer = 0.15;
+      this.meleeHitDone = false;
+
+      const spread = isFrenzy ? (Math.random() - 0.5) * 0.40 : (Math.random() - 0.5) * 0.10;
+      const targetAngle = Math.atan2(playerY - this.y, playerX - this.x) + spread;
+      const targetDist = 12;
+      const tx = this.x + Math.cos(targetAngle) * targetDist;
+      const ty = this.y + Math.sin(targetAngle) * targetDist;
+
+      const projSpeed = isFrenzy ? 14.5 : 9.0;
+      const projDmg = isFrenzy ? Math.round(this.damage * 0.85) : Math.round(this.damage * 1.15);
+      const projColor = isFrenzy ? '#f43f5e' : '#38bdf8';
+      const projStyle: ProjectileStyle = 'plasma_bolt';
+
+      projectileManager.spawn(
+        this.x,
+        this.y,
+        tx,
+        ty,
+        projDmg,
+        'plasma',
+        false,
+        projSpeed,
+        projColor,
+        projStyle,
+        false,
+        1,
+        this.name
+      );
+
+      if (isFrenzy) {
+        soundEngine.playTripleShot();
+        particleSystem.emitSparks(this.x, this.y, 0.35, '#f43f5e', 4);
+      } else {
+        soundEngine.playRailgunShot();
+        particleSystem.emitSparks(this.x, this.y, 0.25, '#38bdf8', 2);
+      }
+      return;
+    }
+
     if (this.type.includes('marauder') || this.type.includes('trooper')) {
       this.attackCooldown = 1.5;
       this.lungeTimer = 0.35;
@@ -1302,22 +1361,42 @@ export class Enemy {
     if (this.shield > 0) {
       // Bonus shield damage from upgraded weapons (extra areal / shield damage!)
       const shieldShredMult = 1.0 + Math.max(0, shieldBonusMultiplier);
-      const shieldDmg = Math.round(amount * shieldShredMult);
+      const rawShieldDmg = Math.round(amount * shieldShredMult);
+
+      // Kinetic Barrier Deflection & Hardening:
+      // Shields absorb and disperse incoming projectile kinetic energy.
+      // Single hits cannot collapse more than ~25% (or up to ~35% with specialized shield-shred weapons)
+      // of maxShield, ensuring players must shoot at least 3-5 times before the shield goes down.
+      const maxPerHitRatio = Math.min(0.35, 0.23 + Math.max(0, shieldBonusMultiplier) * 0.12);
+      const maxAllowedDmg = Math.max(30, Math.round(this.maxShield * maxPerHitRatio));
+      const shieldDmg = Math.min(rawShieldDmg, maxAllowedDmg);
+
       this.shield -= shieldDmg;
-      particleSystem.emitShockwave(this.x, this.y, 1.2, '#38bdf8');
-      particleSystem.emitSparks(this.x, this.y, 0.3, '#38bdf8', 4);
+      particleSystem.emitShockwave(this.x, this.y, 1.35, '#38bdf8');
+      particleSystem.emitSparks(this.x, this.y, 0.35, '#38bdf8', 5);
 
       if (this.shield <= 0) {
         this.shield = 0;
         this.isShielded = false;
         soundEngine.playHitImpact(true);
-        particleSystem.emitShockwave(this.x, this.y, 2.4, '#38bdf8');
-        for (let i = 0; i < 8; i++) {
-          particleSystem.emitSparks(this.x, this.y, 0.4, '#38bdf8', 2);
+        particleSystem.emitShockwave(this.x, this.y, 2.8, '#38bdf8');
+        for (let i = 0; i < 10; i++) {
+          particleSystem.emitSparks(this.x, this.y, 0.45, '#38bdf8', 3);
+        }
+
+        // Trigger Overclock Berserk Mode when shield drops
+        if (this.type.includes('aegis') || this.type.includes('overclock')) {
+          this.isOverclocked = true;
+          this.attackCooldown = 0.20; // Immediate rapid retaliation
+          soundEngine.playSpecialRelease();
+          particleSystem.emitShockwave(this.x, this.y, 3.5, '#ef4444');
+          for (let i = 0; i < 14; i++) {
+            particleSystem.emitSparks(this.x, this.y, 0.55, '#f43f5e', 4);
+          }
         }
       }
-      // Residual damage to health if shield was broken
-      finalAmt = this.shield === 0 ? Math.round(amount * 0.4) : 0;
+      // Zero health bleed-through: shield fully absorbs damage until depleted
+      finalAmt = 0;
     } else if (this.isShielded) {
       if (shieldBonusMultiplier >= 0.35) {
         // High shield shred shatters the barrier

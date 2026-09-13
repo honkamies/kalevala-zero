@@ -1004,10 +1004,14 @@ export class SampoGame {
 
         // Later sectors, loops, and elites possess energy barrier shielding:
         const sectorOrder = this.world?.biome?.order || 1;
-        const hasShield = isElite || (loop > 0 && Math.random() < 0.45) || (sectorOrder >= 2 && Math.random() < 0.35);
+        const isAegisType = ep.type.includes('aegis') || ep.type.includes('overclock');
+        const hasShield = isAegisType || isElite || (loop > 0 && Math.random() < 0.50) || (sectorOrder >= 2 && Math.random() < 0.40);
         if (hasShield) {
           enemy.isShielded = true;
-          enemy.maxShield = Math.round(enemyHealth * (isElite ? 0.60 : 0.40));
+          enemy.hadShield = true;
+          // Fortified energy barrier: requires 3-5 sustained shots to collapse
+          const baseShieldValue = Math.max(200, Math.round(enemyHealth * (isElite ? 1.85 : 1.45)));
+          enemy.maxShield = Math.round(baseShieldValue * (1.0 + (enemyLevel - 1) * 0.08));
           enemy.shield = enemy.maxShield;
         }
 
@@ -1051,9 +1055,12 @@ export class SampoGame {
                 isElite,
                 baseEnemyLevel + (isElite ? 2 : 0)
               );
-              if (isElite || Math.random() < 0.35) {
+              const isAegisRoamer = ep.type.includes('aegis') || ep.type.includes('overclock');
+              if (isAegisRoamer || isElite || Math.random() < 0.40) {
                 enemy.isShielded = true;
-                enemy.maxShield = Math.round(roamerHealth * 0.45);
+                enemy.hadShield = true;
+                const baseShieldValue = Math.max(200, Math.round(roamerHealth * (isElite ? 1.85 : 1.45)));
+                enemy.maxShield = Math.round(baseShieldValue * (1.0 + (enemy.level - 1) * 0.08));
                 enemy.shield = enemy.maxShield;
               }
               this.enemies.push(enemy);
@@ -3286,8 +3293,9 @@ export class SampoGame {
         const meleeReach = e.isBoss ? 2.5 : (e.hasRuneShard ? 1.85 : (e.type.includes('hound') || e.type.includes('wolf') ? 2.8 : 1.75));
         if (dist <= meleeReach && !e.meleeHitDone && e.lungeTimer > 0.04) {
           e.meleeHitDone = true;
+          const meleeDamage = e.shield > 0 ? Math.round(e.damage * 1.30) : e.damage;
           const res = combatEngine.calculateDamage(
-            { damage: e.damage, damageType: e.damageType, critChance: 8, vaki: 6, nokkela: 6 },
+            { damage: meleeDamage, damageType: e.damageType, critChance: (e.shield > 0 ? 14 : 8), vaki: 6, nokkela: 6 },
             { armor: this.player!.armor, shield: this.player!.shield, isInvulnerable: this.player!.isInvulnerable }
           );
           soundEngine.playHitImpact(true);
@@ -3427,16 +3435,20 @@ export class SampoGame {
               for (let k = 0; k < 10; k++) {
                 particleSystem.emitSparks(e.x, e.y, 0.4, '#facc15', 2);
               }
-              // Strong Point-Blank Knockback
-              const knockAngle = Math.atan2(p.vy, p.vx);
-              e.x += Math.cos(knockAngle) * 0.55;
-              e.y += Math.sin(knockAngle) * 0.55;
+              // Strong Point-Blank Knockback (Shielded enemies resist knockback)
+              if (!e.shield || e.shield <= 0) {
+                const knockAngle = Math.atan2(p.vy, p.vx);
+                e.x += Math.cos(knockAngle) * 0.55;
+                e.y += Math.sin(knockAngle) * 0.55;
+              }
             } else if (p.style === 'aegis_shield_wave') {
               soundEngine.playHitImpact(false);
               particleSystem.emitSparks(e.x, e.y, 0.25, '#38bdf8', 4);
-              const knockAngle = Math.atan2(p.vy, p.vx);
-              e.x += Math.cos(knockAngle) * 0.25;
-              e.y += Math.sin(knockAngle) * 0.25;
+              if (!e.shield || e.shield <= 0) {
+                const knockAngle = Math.atan2(p.vy, p.vx);
+                e.x += Math.cos(knockAngle) * 0.25;
+                e.y += Math.sin(knockAngle) * 0.25;
+              }
             } else {
               this.camera.addShake(p.style === 'homing_missile' ? 0.75 : 0.35, 0.05);
 
