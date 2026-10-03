@@ -27,3 +27,5 @@ Thumbs.db
 .env.local
 .env.*.local
 *.tmp
+server/.jwt_secret
+.env

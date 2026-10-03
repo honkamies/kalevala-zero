@@ -65,13 +65,12 @@ export class ChestLockUI {
       pointer-events: auto;
     `;
 
-    const rarityColor = {
-      common: '#94a3b8',
-      augmented: '#38bdf8',
-      runic: '#c084fc',
-      masterwork: '#f59e0b',
-      relic: '#ef4444'
-    }[chest.rarity];
+    const chestColor = chest.colorHex || ({
+      green: '#22c55e',
+      blue: '#38bdf8',
+      yellow: '#facc15',
+      red: '#ef4444'
+    }[chest.chestColor]) || '#22c55e';
 
     const bonusPerVault = this.greedInfo.threatBonusPercent ?? 5;
     const currentThreatPct = (this.greedInfo.count || 0) * bonusPerVault;
@@ -84,10 +83,10 @@ export class ChestLockUI {
         width: 640px; 
         max-width: 94vw; 
         background: rgba(13, 18, 29, 0.98); 
-        border: 2px solid ${rarityColor}; 
+        border: 2px solid ${chestColor}; 
         border-radius: 10px; 
         padding: 24px 30px; 
-        box-shadow: 0 0 35px ${rarityColor}44, 0 25px 60px rgba(0,0,0,0.9);
+        box-shadow: 0 0 35px ${chestColor}44, 0 25px 60px rgba(0,0,0,0.9);
         display: flex;
         flex-direction: column;
         gap: 14px;
@@ -96,13 +95,13 @@ export class ChestLockUI {
         <!-- HEADER -->
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-dim); padding-bottom:10px;">
           <div style="display:flex; align-items:center; gap:12px;">
-            <img src="./assets/chest_${chest.rarity}.jpg" style="
-              width: 52px; 
-              height: 52px; 
+            <img src="./assets/thumb_chest_${chest.chestColor || chest.rarity}.jpg" style="
+              width: 54px; 
+              height: 54px; 
               border-radius: 8px; 
-              border: 1.5px solid ${rarityColor}; 
+              border: 1.5px solid ${chestColor}; 
               background: #000000; 
-              box-shadow: 0 0 12px ${rarityColor}55; 
+              box-shadow: 0 0 12px ${chestColor}55; 
               object-fit: cover;
             " alt="${chest.displayName}" />
             <div>
@@ -111,8 +110,23 @@ export class ChestLockUI {
                   ${chest.displayName.toUpperCase()}
                 </span>
               </div>
-              <div style="font-family:var(--font-mono); font-size:11px; color:${rarityColor}; margin-top:2px; text-align:left;">
-                [${chest.rarity.toUpperCase()} TIER] // ${chest.keySequence.length}-STEP DIRECTIONAL CIPHER (${chest.timeLimitPerKey.toFixed(1)}s WINDOW)
+              <div style="display:flex; align-items:center; gap:8px; margin-top:3px; text-align:left;">
+                <span style="
+                  background: ${chestColor}25;
+                  border: 1px solid ${chestColor};
+                  color: ${chestColor};
+                  font-family: var(--font-mono);
+                  font-size: 11px;
+                  font-weight: 700;
+                  padding: 1px 7px;
+                  border-radius: 4px;
+                  letter-spacing: 1px;
+                ">
+                  ● ${chest.chestColor.toUpperCase()} CHEST: ${chest.hardness.toUpperCase()} HARDNESS
+                </span>
+                <span style="font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">
+                  // ${chest.keySequence.length}-STEP CIPHER (${chest.timeLimitPerKey.toFixed(1)}s WINDOW)
+                </span>
               </div>
             </div>
           </div>
@@ -131,6 +145,55 @@ export class ChestLockUI {
             justify-content: center;
             transition: all 0.15s ease;
           ">✕</button>
+        </div>
+
+        <!-- CHEST COLOR HARDNESS PROTOCOL BRIEFING -->
+        <div style="
+          background: rgba(9, 14, 23, 0.85); 
+          border: 1.5px solid ${chestColor}66; 
+          border-left: 5px solid ${chestColor};
+          border-radius: 6px; 
+          padding: 10px 14px; 
+          text-align: left;
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          box-shadow: 0 0 16px ${chestColor}22;
+        ">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="display:flex; align-items:center; gap:8px;">
+              <span style="font-size:16px;">🔐</span>
+              <span style="font-family:var(--font-rune); font-size:12px; color:${chestColor}; letter-spacing:1px; font-weight:700;">
+                CHEST CIPHER PROTOCOL: ${chest.hardness.toUpperCase()} HARDNESS
+              </span>
+            </div>
+            <span style="font-family:var(--font-mono); font-size:10.5px; color:#ffffff; background:${chestColor}33; border:1px solid ${chestColor}; padding:1px 8px; border-radius:4px; font-weight:700;">
+              ${chest.keySequence.length} KEYS • ${chest.timeLimitPerKey.toFixed(1)}s TIMER
+            </span>
+          </div>
+          <div style="font-size:11.5px; color:var(--text-main); line-height:1.4;">
+            ${chest.hardnessInfo?.description || 'Directional cipher requires matching key inputs before timer expires.'}
+          </div>
+          <div style="
+            display:flex; 
+            align-items:center; 
+            gap:6px; 
+            margin-top:2px; 
+            padding-top:6px; 
+            border-top:1px solid rgba(255,255,255,0.08); 
+            font-family:var(--font-mono); 
+            font-size:10.5px;
+            flex-wrap:wrap;
+          ">
+            <span style="color:var(--text-muted); font-size:10px;">Chest Color Hardness Scale:</span>
+            <span style="color:#22c55e; font-weight:${chest.chestColor === 'green' ? 'bold' : 'normal'}; background:${chest.chestColor === 'green' ? 'rgba(34,197,94,0.25)' : 'transparent'}; padding:1px 6px; border-radius:3px; border:${chest.chestColor === 'green' ? '1px solid #22c55e' : '1px solid transparent'};">🟢 Green (Easy)</span>
+            <span style="color:#475569;">➔</span>
+            <span style="color:#38bdf8; font-weight:${chest.chestColor === 'blue' ? 'bold' : 'normal'}; background:${chest.chestColor === 'blue' ? 'rgba(56,189,248,0.25)' : 'transparent'}; padding:1px 6px; border-radius:3px; border:${chest.chestColor === 'blue' ? '1px solid #38bdf8' : '1px solid transparent'};">🔵 Blue (Medium)</span>
+            <span style="color:#475569;">➔</span>
+            <span style="color:#facc15; font-weight:${chest.chestColor === 'yellow' ? 'bold' : 'normal'}; background:${chest.chestColor === 'yellow' ? 'rgba(250,204,21,0.25)' : 'transparent'}; padding:1px 6px; border-radius:3px; border:${chest.chestColor === 'yellow' ? '1px solid #facc15' : '1px solid transparent'};">🟡 Yellow (Hard)</span>
+            <span style="color:#475569;">➔</span>
+            <span style="color:#ef4444; font-weight:${chest.chestColor === 'red' ? 'bold' : 'normal'}; background:${chest.chestColor === 'red' ? 'rgba(239,68,68,0.25)' : 'transparent'}; padding:1px 6px; border-radius:3px; border:${chest.chestColor === 'red' ? '1px solid #ef4444' : '1px solid transparent'};">🔴 Red (Deadly)</span>
+          </div>
         </div>
 
         <!-- GREED CORRUPTION PROTOCOL WARNING -->
@@ -198,10 +261,10 @@ export class ChestLockUI {
         <div style="display:flex; flex-direction:column; gap:4px; text-align:left;">
           <div style="display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:11px; color:var(--text-muted);">
             <span id="lock-timer-label">RESPONSE BUFFER WINDOW</span>
-            <span id="lock-timer-text" style="color:${rarityColor}; font-weight:700;">READY</span>
+            <span id="lock-timer-text" style="color:${chestColor}; font-weight:700;">READY</span>
           </div>
           <div style="height:6px; background:rgba(255,255,255,0.08); border-radius:3px; overflow:hidden;">
-            <div id="lock-timer-fill" style="width:100%; height:100%; background:${rarityColor}; transition:width 0.05s linear;"></div>
+            <div id="lock-timer-fill" style="width:100%; height:100%; background:${chestColor}; transition:width 0.05s linear;"></div>
           </div>
         </div>
 
@@ -215,7 +278,7 @@ export class ChestLockUI {
           border: 1px solid var(--border-dim); 
           border-radius: 8px;
         ">
-          ${this.renderKeySlotsHtml(chest.keySequence, -1, rarityColor)}
+          ${this.renderKeySlotsHtml(chest.keySequence, -1, chestColor)}
         </div>
 
         <!-- START BANNER / ACTIVE STATUS -->
@@ -225,7 +288,7 @@ export class ChestLockUI {
             padding: 12px 20px; 
             font-size: 13px; 
             letter-spacing: 1px;
-            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+            box-shadow: 0 0 20px ${chestColor}66;
             animation: pulseGlow 1.5s infinite alternate;
           ">
             🚀 PRESS [SPACEBAR] OR CLICK TO START DECRYPTION
@@ -463,20 +526,19 @@ export class ChestLockUI {
   private updateSlotsDisplay() {
     if (!this.currentChest) return;
 
-    const rarityColor = {
-      common: '#94a3b8',
-      augmented: '#38bdf8',
-      runic: '#c084fc',
-      masterwork: '#f59e0b',
-      relic: '#ef4444'
-    }[this.currentChest.rarity];
+    const chestColor = this.currentChest.colorHex || ({
+      green: '#22c55e',
+      blue: '#38bdf8',
+      yellow: '#facc15',
+      red: '#ef4444'
+    }[this.currentChest.chestColor]) || '#22c55e';
 
     const container = document.getElementById('lock-sequence-container');
     if (container) {
       container.innerHTML = this.renderKeySlotsHtml(
         this.currentChest.keySequence,
         this.isStarted ? this.currentIndex : -1,
-        rarityColor
+        chestColor
       );
     }
   }
@@ -553,13 +615,14 @@ export class ChestLockUI {
 
     soundEngine.playLevelUp();
 
+    const chest = this.currentChest!;
+    const chestColor = chest.colorHex || '#22c55e';
     const feedbackEl = document.getElementById('lock-feedback');
     if (feedbackEl) {
-      feedbackEl.style.color = '#f59e0b';
-      feedbackEl.textContent = '⚡ VAULT DECRYPTED! DISPENSING LOOT...';
+      feedbackEl.style.color = chestColor;
+      feedbackEl.textContent = `⚡ ${chest.chestColor.toUpperCase()} VAULT DECRYPTED (${chest.hardness.toUpperCase()} HARDNESS)! DISPENSING LOOT...`;
     }
 
-    const chest = this.currentChest!;
     setTimeout(() => {
       if (this.onDecryptedCallback) {
         this.onDecryptedCallback(chest);

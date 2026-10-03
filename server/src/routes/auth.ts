@@ -8,16 +8,20 @@ const router = Router();
 router.post('/register', async (req, res) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
+    if (typeof username !== 'string' || typeof password !== 'string' || !username || !password) {
       return res.status(400).json({ error: 'Username and password are required' });
+    }
+
+    if (password.length > 128) {
+      return res.status(400).json({ error: 'Password is too long' });
     }
 
     if (username.length < 3 || username.length > 32) {
       return res.status(400).json({ error: 'Username must be between 3 and 32 characters' });
     }
 
-    if (password.length < 4) {
-      return res.status(400).json({ error: 'Password must be at least 4 characters long' });
+    if (password.length < 8) {
+      return res.status(400).json({ error: 'Password must be at least 8 characters long' });
     }
 
     const existing = await db.findUserByUsername(username);
@@ -39,7 +43,7 @@ router.post('/register', async (req, res) => {
     });
   } catch (err: any) {
     console.error('[Auth Register Error]:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -47,7 +51,7 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    if (!username || !password) {
+    if (typeof username !== 'string' || typeof password !== 'string' || !username || !password || password.length > 128) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
@@ -72,7 +76,7 @@ router.post('/login', async (req, res) => {
     });
   } catch (err: any) {
     console.error('[Auth Login Error]:', err);
-    return res.status(500).json({ error: err.message || 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -85,7 +89,7 @@ router.get('/me', authenticate, async (req: AuthRequest, res) => {
     }
     return res.json({ user });
   } catch (err: any) {
-    return res.status(500).json({ error: err.message || 'Internal server error' });
+    return res.status(500).json({ error: 'Internal server error' });
   }
 });
 

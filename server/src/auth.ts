@@ -1,8 +1,33 @@
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
+import fs from 'fs';
+import path from 'path';
 
-const JWT_SECRET = process.env.JWT_SECRET || 'sampo_kalevala_cyber_secret_key_2026';
+/**
+ * Resolve the JWT signing secret. Prefers the JWT_SECRET env var; otherwise a random
+ * secret is generated once and persisted to disk so tokens survive restarts without
+ * ever relying on a secret that is published in the source code.
+ */
+function resolveJwtSecret(): string {
+  if (process.env.JWT_SECRET) return process.env.JWT_SECRET;
+  const secretPath = path.resolve(process.env.JWT_SECRET_FILE || path.join(__dirname, '..', '.jwt_secret'));
+  try {
+    const existing = fs.readFileSync(secretPath, 'utf8').trim();
+    if (existing.length >= 32) return existing;
+  } catch { /* not created yet */ }
+  const generated = crypto.randomBytes(48).toString('hex');
+  try {
+    fs.writeFileSync(secretPath, generated, { mode: 0o600 });
+    console.warn(`[Auth] JWT_SECRET not set - generated a random secret at ${secretPath}`);
+  } catch (err) {
+    console.warn('[Auth] JWT_SECRET not set and secret file is not writable - using an ephemeral secret (tokens reset on restart)');
+  }
+  return generated;
+}
+
+const JWT_SECRET = resolveJwtSecret();
 
 export interface AuthRequest extends Request {
   user?: {
@@ -12,7 +37,7 @@ export interface AuthRequest extends Request {
 }
 
 export async function hashPassword(password: string): Promise<string> {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   return bcrypt.hash(password, salt);
 }
 

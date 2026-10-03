@@ -42,12 +42,16 @@ export class AssetLoader {
     // Portals & Environment
     { key: 'portal_rift', src: './assets/void_portal_rift.jpg', isTransparent: true },
 
-    // Loot Chests (Kalevala Old School Treasure Vaults)
+    // Loot Chests (Kalevala Treasure Vaults: Green, Blue, Yellow, Red)
     { key: 'chest_common', src: './assets/chest_common.jpg', isTransparent: true },
+    { key: 'chest_green', src: './assets/chest_green.jpg', isTransparent: true },
     { key: 'chest_augmented', src: './assets/chest_augmented.jpg', isTransparent: true },
-    { key: 'chest_runic', src: './assets/chest_runic.jpg', isTransparent: true },
+    { key: 'chest_blue', src: './assets/chest_blue.jpg', isTransparent: true },
     { key: 'chest_masterwork', src: './assets/chest_masterwork.jpg', isTransparent: true },
+    { key: 'chest_yellow', src: './assets/chest_yellow.jpg', isTransparent: true },
+    { key: 'chest_runic', src: './assets/chest_runic.jpg', isTransparent: true },
     { key: 'chest_relic', src: './assets/chest_relic.jpg', isTransparent: true },
+    { key: 'chest_red', src: './assets/chest_red.jpg', isTransparent: true },
     { key: 'chest_opened', src: './assets/chest_opened.jpg', isTransparent: true },
 
     // Menu Carousel & Realm Backgrounds
@@ -319,7 +323,7 @@ export class AssetLoader {
     );
   }
 
-  static getChestSprite(rarity: string = 'common', isOpened: boolean = false): HTMLCanvasElement | HTMLImageElement | null {
+  static getChestSprite(keyOrRarityOrColor: string = 'common', isOpened: boolean = false): HTMLCanvasElement | HTMLImageElement | null {
     if (isOpened) {
       return (
         this.transparentCache.get('chest_opened') ||
@@ -327,10 +331,24 @@ export class AssetLoader {
         null
       );
     }
-    const cleanKey = `chest_${rarity.toLowerCase()}`;
+    const clean = (keyOrRarityOrColor || 'common').toLowerCase();
+    const aliasMap: Record<string, string> = {
+      green: 'chest_green',
+      blue: 'chest_blue',
+      yellow: 'chest_yellow',
+      red: 'chest_red',
+      common: 'chest_green',
+      augmented: 'chest_blue',
+      runic: 'chest_yellow',
+      masterwork: 'chest_yellow',
+      relic: 'chest_red',
+    };
+    const targetKey = aliasMap[clean] || `chest_${clean}`;
     return (
-      this.transparentCache.get(cleanKey) ||
-      this.imageCache.get(cleanKey) ||
+      this.transparentCache.get(targetKey) ||
+      this.imageCache.get(targetKey) ||
+      this.transparentCache.get('chest_green') ||
+      this.imageCache.get('chest_green') ||
       this.transparentCache.get('chest_common') ||
       this.imageCache.get('chest_common') ||
       null

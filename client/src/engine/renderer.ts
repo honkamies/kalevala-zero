@@ -2130,13 +2130,12 @@ export class IsometricRenderer {
     ctx.save();
     ctx.translate(sp.x, sp.y);
 
-    const rarityColor = {
-      common: '#94a3b8',
-      augmented: '#38bdf8',
-      runic: '#c084fc',
-      masterwork: '#f59e0b',
-      relic: '#ef4444'
-    }[chest.rarity] || '#38bdf8';
+    const chestColor = chest.colorHex || ({
+      green: '#22c55e',
+      blue: '#38bdf8',
+      yellow: '#facc15',
+      red: '#ef4444'
+    }[chest.chestColor]) || '#22c55e';
 
     if (chest.isDestroyed) {
       ctx.beginPath();
@@ -2173,10 +2172,10 @@ export class IsometricRenderer {
 
     // 2. Luminous Pop-up Radial Halo Glow behind and around the chest
     if (!chest.isOpened) {
-      const haloRadius = 26 * z * pulse;
+      const haloRadius = 28 * z * pulse;
       const haloGrad = ctx.createRadialGradient(0, spriteY, 2 * z, 0, spriteY, haloRadius);
-      haloGrad.addColorStop(0, `${rarityColor}55`);
-      haloGrad.addColorStop(0.45, `${rarityColor}25`);
+      haloGrad.addColorStop(0, `${chestColor}66`);
+      haloGrad.addColorStop(0.45, `${chestColor}28`);
       haloGrad.addColorStop(1, 'rgba(0,0,0,0)');
 
       ctx.fillStyle = haloGrad;
@@ -2187,14 +2186,14 @@ export class IsometricRenderer {
       // Soft ground ambient color ring
       ctx.beginPath();
       ctx.ellipse(0, 1 * z, 22 * z * pulse, 11 * z * pulse, 0, 0, Math.PI * 2);
-      ctx.fillStyle = `${rarityColor}1a`;
+      ctx.fillStyle = `${chestColor}1a`;
       ctx.fill();
 
       // Vertical beacon shimmer
       const grad = ctx.createLinearGradient(0, 0, 0, -75 * z);
-      grad.addColorStop(0, `${rarityColor}33`);
-      grad.addColorStop(0.6, `${rarityColor}11`);
-      grad.addColorStop(1, `${rarityColor}00`);
+      grad.addColorStop(0, `${chestColor}44`);
+      grad.addColorStop(0.6, `${chestColor}18`);
+      grad.addColorStop(1, `${chestColor}00`);
       ctx.beginPath();
       ctx.moveTo(-11 * z, 0);
       ctx.lineTo(11 * z, 0);
@@ -2212,8 +2211,8 @@ export class IsometricRenderer {
         const pSize = (1.2 + Math.sin(now * 3.5 + p) * 0.6) * z;
         ctx.beginPath();
         ctx.arc(px, py, Math.max(0.5, pSize), 0, Math.PI * 2);
-        ctx.fillStyle = p % 2 === 0 ? '#ffffff' : rarityColor;
-        ctx.shadowColor = rarityColor;
+        ctx.fillStyle = p % 2 === 0 ? '#ffffff' : chestColor;
+        ctx.shadowColor = chestColor;
         ctx.shadowBlur = 8 * z;
         ctx.fill();
         ctx.shadowBlur = 0;
@@ -2221,11 +2220,11 @@ export class IsometricRenderer {
     }
 
     // 4. Render Dedicated Custom Sprite Graphic with Glowing Outer Shadow
-    const sprite = AssetLoader.getChestSprite(chest.rarity, chest.isOpened);
+    const sprite = AssetLoader.getChestSprite(chest.chestColor || chest.rarity, chest.isOpened);
     if (sprite) {
       if (!chest.isOpened) {
-        ctx.shadowColor = rarityColor;
-        ctx.shadowBlur = 10 * z;
+        ctx.shadowColor = chestColor;
+        ctx.shadowBlur = 12 * z;
       }
       ctx.drawImage(sprite, -spriteSize / 2, spriteY - spriteSize / 2, spriteSize, spriteSize);
       ctx.shadowBlur = 0;
@@ -2233,32 +2232,82 @@ export class IsometricRenderer {
       // Fallback geometric rendering
       ctx.beginPath();
       ctx.rect(-12 * z, -14 * z + bob, 24 * z, 14 * z);
-      ctx.fillStyle = chest.isOpened ? '#334155' : (chest.rarity === 'masterwork' ? '#78350f' : (chest.rarity === 'runic' ? '#581c87' : '#0369a1'));
+      ctx.fillStyle = chest.isOpened ? '#334155' : chestColor;
       ctx.fill();
-      ctx.strokeStyle = chest.isOpened ? '#1e293b' : rarityColor;
+      ctx.strokeStyle = chest.isOpened ? '#1e293b' : chestColor;
       ctx.lineWidth = 2 * z;
       ctx.stroke();
     }
 
-    // 5. Floating [E] DECRYPT / OPEN Prompt Badge
+    // 5. Floating [E] DECRYPT / OPEN Prompt Badge (High Contrast & Clear Typography)
     if (isNearby) {
-      const promptY = spriteY - 26 * z + Math.sin(now * 3.5) * 3 * z;
-      const promptText = chest.isLocked ? '🔒 [SEALED]' : `[E] DECRYPT (${chest.keySequence.length} KEYS)`;
-      const boxW = chest.isLocked ? 76 * z : 98 * z;
+      const promptY = spriteY - 34 * z + Math.sin(now * 2.5) * 2.5 * z;
+      const headFontSize = Math.max(12, Math.round(13 * Math.min(1.15, Math.max(0.9, z))));
+      const subFontSize = Math.max(10, Math.round(11 * Math.min(1.15, Math.max(0.9, z))));
 
-      ctx.fillStyle = 'rgba(11, 17, 28, 0.95)';
-      ctx.strokeStyle = chest.isLocked ? '#ef4444' : rarityColor;
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.rect(-boxW / 2, promptY - 10 * z, boxW, 20 * z);
-      ctx.fill();
-      ctx.stroke();
+      if (chest.isLocked) {
+        const titleText = '🔒 [LOCKED CHEST]';
+        const subText = 'SOLVE SECTOR PUZZLE TO UNLOCK';
 
+        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
+        const w1 = ctx.measureText(titleText).width;
+        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
+        const w2 = ctx.measureText(subText).width;
+        const boxW = Math.max(170, Math.max(w1, w2) + 28);
+        const boxH = 40;
 
-      ctx.font = `bold ${Math.floor(10 * z)}px Rajdhani, sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillStyle = chest.isLocked ? '#ef4444' : rarityColor;
-      ctx.fillText(promptText, 0, promptY + 4 * z);
+        ctx.fillStyle = 'rgba(8, 14, 26, 0.95)';
+        ctx.strokeStyle = '#ef4444';
+        ctx.lineWidth = 2;
+        ctx.shadowColor = '#ef4444';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.roundRect(-boxW / 2, promptY - boxH / 2, boxW, boxH, [6]);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
+        ctx.fillStyle = '#ef4444';
+        ctx.fillText(titleText, 0, promptY - 7);
+
+        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(subText, 0, promptY + 8);
+      } else {
+        const titleText = `[E] OPEN ${chest.chestColor.toUpperCase()} CHEST`;
+        const subText = `● ${chest.hardness.toUpperCase()} HARDNESS (${chest.keySequence.length} KEYS)`;
+
+        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
+        const w1 = ctx.measureText(titleText).width;
+        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
+        const w2 = ctx.measureText(subText).width;
+        const boxW = Math.max(180, Math.max(w1, w2) + 28);
+        const boxH = 42;
+
+        ctx.fillStyle = 'rgba(8, 14, 26, 0.95)';
+        ctx.strokeStyle = chestColor;
+        ctx.lineWidth = 2;
+        ctx.shadowColor = chestColor;
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.roundRect(-boxW / 2, promptY - boxH / 2, boxW, boxH, [6]);
+        ctx.fill();
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(titleText, 0, promptY - 8);
+
+        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
+        ctx.fillStyle = chestColor;
+        ctx.fillText(subText, 0, promptY + 8);
+      }
     }
 
     ctx.restore();
@@ -2626,35 +2675,83 @@ export class IsometricRenderer {
       ctx.restore();
     }
 
-    // 5.5. Fortified Energy Shield Barrier Dome (Visual shield aura)
+    // 5.5. Directional Aegis Shield Barrier & Subtle Energy Shimmer (No floating bubble)
     if (enemy.isShielded || (enemy.shield && enemy.shield > 0)) {
-      const shieldTime = performance.now() * 0.004;
-      const shieldPulse = 1.0 + Math.sin(shieldTime * 2.5) * 0.05;
-      const sRadius = (baseSize * 1.20) * shieldPulse;
+      const shieldTime = performance.now() * 0.003;
+      const cosA = Math.cos(enemy.angle);
+      const sinA = Math.sin(enemy.angle);
+      // Project world direction into isometric screen angle
+      const screenAngle = Math.atan2((cosA + sinA) * 0.5, cosA - sinA);
+
       ctx.save();
+
+      // A. Subtle Non-Intrusive Body Aura / Shimmer (Soft ambient glow, NO hard bubble boundary)
+      const shimmerPulse = 0.07 + Math.sin(shieldTime * 2.0) * 0.03;
+      const auraRadius = baseSize * 1.05;
+      const auraGrad = ctx.createRadialGradient(lungeX, heightOffset, auraRadius * 0.25, lungeX, heightOffset, auraRadius * 1.2);
+      auraGrad.addColorStop(0, `rgba(56, 189, 248, ${shimmerPulse * 0.4})`);
+      auraGrad.addColorStop(0.7, `rgba(56, 189, 248, ${shimmerPulse * 0.2})`);
+      auraGrad.addColorStop(1, 'rgba(56, 189, 248, 0)');
+      ctx.fillStyle = auraGrad;
       ctx.beginPath();
-      ctx.arc(lungeX, heightOffset, sRadius, 0, Math.PI * 2);
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.85)';
-      ctx.lineWidth = 2.4 * z;
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 14;
-      ctx.stroke();
+      ctx.arc(lungeX, heightOffset, auraRadius * 1.2, 0, Math.PI * 2);
       ctx.fill();
 
-      // Orbiting energetic deflection arcs around the barrier
-      const arcAng = shieldTime * 2.2;
+      // B. Directional Front Aegis Shield (Curved hard-light barrier facing movement / target)
+      const sRadius = baseSize * 0.95;
+      const arcSpread = Math.PI * 0.28; // ~50 degrees each side, 100 degrees total
+
+      // The center of curvature is slightly offset behind the shield face
+      const curveOriginX = lungeX - Math.cos(screenAngle) * (baseSize * 0.12);
+      const curveOriginY = heightOffset - Math.sin(screenAngle) * (baseSize * 0.12);
+
+      // Main curved shield arc
       ctx.beginPath();
-      ctx.arc(lungeX, heightOffset, sRadius + 2.0 * z, arcAng, arcAng + Math.PI * 0.55);
-      ctx.strokeStyle = 'rgba(186, 230, 253, 0.85)';
-      ctx.lineWidth = 1.8 * z;
+      ctx.arc(curveOriginX, curveOriginY, sRadius, screenAngle - arcSpread, screenAngle + arcSpread);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.lineWidth = 2.0 * z;
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 8;
       ctx.stroke();
 
+      // Inner faint secondary harmonic arc
       ctx.beginPath();
-      ctx.arc(lungeX, heightOffset, sRadius + 2.0 * z, arcAng + Math.PI, arcAng + Math.PI * 1.55);
-      ctx.strokeStyle = 'rgba(186, 230, 253, 0.85)';
-      ctx.lineWidth = 1.8 * z;
+      ctx.arc(curveOriginX, curveOriginY, sRadius - 3.5 * z, screenAngle - arcSpread * 0.8, screenAngle + arcSpread * 0.8);
+      ctx.strokeStyle = 'rgba(186, 230, 253, 0.45)';
+      ctx.lineWidth = 1.2 * z;
+      ctx.shadowBlur = 4;
       ctx.stroke();
+
+      // Subtle directional shield deflection crest / center chevron
+      const crestDist = sRadius + 2.5 * z;
+      const crestTipX = curveOriginX + Math.cos(screenAngle) * crestDist;
+      const crestTipY = curveOriginY + Math.sin(screenAngle) * crestDist;
+      const wingDist = sRadius - 2.0 * z;
+      const wingLeftX = curveOriginX + Math.cos(screenAngle - 0.22) * wingDist;
+      const wingLeftY = curveOriginY + Math.sin(screenAngle - 0.22) * wingDist;
+      const wingRightX = curveOriginX + Math.cos(screenAngle + 0.22) * wingDist;
+      const wingRightY = curveOriginY + Math.sin(screenAngle + 0.22) * wingDist;
+
+      ctx.beginPath();
+      ctx.moveTo(wingLeftX, wingLeftY);
+      ctx.lineTo(crestTipX, crestTipY);
+      ctx.lineTo(wingRightX, wingRightY);
+      ctx.strokeStyle = 'rgba(224, 242, 254, 0.85)';
+      ctx.lineWidth = 1.4 * z;
+      ctx.stroke();
+
+      // Small energetic glint particle travelling along the shield barrier
+      const glideT = Math.sin(shieldTime * 3.0);
+      const glideAngle = screenAngle + glideT * (arcSpread * 0.75);
+      const sparkX = curveOriginX + Math.cos(glideAngle) * sRadius;
+      const sparkY = curveOriginY + Math.sin(glideAngle) * sRadius;
+
+      ctx.beginPath();
+      ctx.arc(sparkX, sparkY, 1.8 * z, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.shadowColor = '#bae6fd';
+      ctx.shadowBlur = 6;
+      ctx.fill();
 
       ctx.restore();
     }

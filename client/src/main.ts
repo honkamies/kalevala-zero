@@ -2613,7 +2613,7 @@ export class SampoGame {
               );
               const died = this.player!.takeDamage(res.finalDamage, 'fire', `${blownChest.displayName} Overload`);
               combatEngine.addFloatingText(this.player!.x, this.player!.y, `-${res.finalDamage} HP 💥 OVERLOAD`, 'physical');
-              this.hud.addLog(`💥 VAULT OVERLOAD: ${blownChest.displayName} self-destructed! Suffered ${res.finalDamage} explosive damage!`, 'alert');
+              this.hud.addLog(`💥 VAULT OVERLOAD: ${blownChest.displayName} [${blownChest.chestColor.toUpperCase()} - ${blownChest.hardness.toUpperCase()} HARDNESS] self-destructed! Suffered ${res.finalDamage} explosive damage!`, 'alert');
               this.savePlayer();
               if (died) {
                 this.handlePlayerDeath({
@@ -2671,7 +2671,8 @@ export class SampoGame {
     this.vaultGreedCount++;
     const totalThreat = this.getVaultGreedThreatPercent();
 
-    this.hud.addLog(`Decrypted ${decryptedChest.displayName} (${decryptedChest.keySequence.length}-Key Sequence)!`, 'loot');
+    this.hud.addLog(`Decrypted ${decryptedChest.displayName} [${decryptedChest.chestColor.toUpperCase()} - ${decryptedChest.hardness.toUpperCase()} HARDNESS] (${decryptedChest.keySequence.length}-Key Sequence)!`, 'loot');
+    combatEngine.addFloatingText(decryptedChest.x, decryptedChest.y, `🔓 ${decryptedChest.chestColor.toUpperCase()} CHEST OPENED (${decryptedChest.hardness.toUpperCase()})`, 'crit');
     loot.forEach(item => {
       this.givePlayerLoot(item, decryptedChest.x, decryptedChest.y);
     });
