@@ -2592,6 +2592,7 @@ export class SampoGame {
         const dx = this.player.x - chest.x;
         const dy = this.player.y - chest.y;
         if (Math.sqrt(dx * dx + dy * dy) <= 2.2) {
+          this.hud.clearInteractionPrompt();
           this.chestLockUI.open(
             chest,
             (decryptedChest) => {
@@ -2639,6 +2640,7 @@ export class SampoGame {
         const dx = this.player.x - puzzle.x;
         const dy = this.player.y - puzzle.y;
         if (Math.sqrt(dx * dx + dy * dy) <= 2.5) {
+          this.hud.clearInteractionPrompt();
           const bDef = this.world.biome.boss;
           this.puzzleUI.open(puzzle, () => {
             this.puzzleDone = true;
@@ -2717,15 +2719,17 @@ export class SampoGame {
         // Hit-stop freeze frame time scale
         dt = rawDt * 0.04;
 
+        // Emit small dissolving red particles peeling off the dying hero
+        particleSystem.emitRedDissolve(this.player.x, this.player.y, 2);
+
         if (this.deathSequenceState.timer >= this.deathSequenceState.pauseDuration) {
-          // Transition to Cataclysmic Detonation
+          // Transition to Red Particle Dissolution & Explosion (Zero large circles)
           this.deathSequenceState.phase = 'exploding';
           this.player.isDead = true;
           soundEngine.playHeroExplosionCataclysm();
           particleSystem.emitHeroExplosion(this.player.x, this.player.y, this.player.appearance.archetype);
-          this.camera.addShake(2.0, 0.2);
-          this.camera.targetZoom = 0.85;
-          this.hud.addLog(`💥 VESSEL DETONATED: Cybernetic shell vaporized. Matrix connection collapsing...`, 'alert');
+          this.camera.addShake(1.6, 0.16);
+          this.hud.addLog(`💥 VESSEL DISSOLVED: Cybernetic shell collapsed into red nanite particles...`, 'alert');
         }
       } else if (this.deathSequenceState.phase === 'exploding') {
         // Cinematic slow-motion for particle & shard scatter
@@ -3629,6 +3633,139 @@ export class SampoGame {
       this.hud.updateMonolithNavigation(mDist, mDx, mDy, isNearby, bDef.name);
     } else {
       this.hud.hideMonolithNavigation();
+    }
+
+    // -------------------------------------------------------------
+    // Update Anchored Interaction Info Bar on HUD (above Hotbar / Symbols row)
+    // -------------------------------------------------------------
+    if (!this.isAnyModalOpen() && !this.player.isDead && !this.deathSequenceState.active) {
+      let nearestPrompt: {
+        distSq: number;
+        prompt: {
+          key: string;
+          title: string;
+          subtitle?: string;
+          badge?: string;
+          color: string;
+          icon?: string;
+        };
+      } | null = null;
+
+      // 1. Check unopened chests in range (radius <= 2.2)
+      for (let i = 0; i < this.chests.length; i++) {
+        const c = this.chests[i];
+        if (c.isOpened || c.isDestroyed) continue;
+        const dx = this.player.x - c.x;
+        const dy = this.player.y - c.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq <= 4.84) {
+          if (!nearestPrompt || distSq < nearestPrompt.distSq) {
+            const chestColor = c.colorHex || ({
+              green: '#22c55e',
+              blue: '#38bdf8',
+              yellow: '#facc15',
+              red: '#ef4444'
+            }[c.chestColor]) || '#22c55e';
+
+            if (c.isLocked) {
+              nearestPrompt = {
+                distSq,
+                prompt: {
+                  key: '🔒',
+                  title: 'LOCKED CHEST',
+                  subtitle: 'SOLVE SECTOR PUZZLE TO UNLOCK',
+                  badge: 'LOCKED',
+                  color: '#ef4444',
+                  icon: '🔒'
+                }
+              };
+            } else {
+              nearestPrompt = {
+                distSq,
+                prompt: {
+                  key: 'E',
+                  title: `OPEN ${c.chestColor.toUpperCase()} CHEST`,
+                  subtitle: `● ${c.hardness.toUpperCase()} HARDNESS (${c.keySequence.length} KEYS)`,
+                  badge: c.hardness.toUpperCase(),
+                  color: chestColor,
+                  icon: '📦'
+                }
+              };
+            }
+          }
+        }
+      }
+
+      // 2. Check puzzles in range (radius <= 2.5)
+      for (let i = 0; i < this.puzzles.length; i++) {
+        const p = this.puzzles[i];
+        if (p.isSolved) continue;
+        const dx = this.player.x - p.x;
+        const dy = this.player.y - p.y;
+        const distSq = dx * dx + dy * dy;
+        if (distSq <= 6.25) {
+          if (!nearestPrompt || distSq < nearestPrompt.distSq) {
+            const collectedCount = p.getCollectedShardsCount();
+            const isAllCollected = p.isAllShardsCollected();
+
+            if (isAllCollected) {
+              nearestPrompt = {
+                distSq,
+                prompt: {
+                  key: 'E',
+                  title: 'SYNCHRONIZE MONOLITH CIPHER',
+                  subtitle: 'ALL 4 SYMBOLS ASSEMBLED — AWAKEN GUARDIAN',
+                  badge: '4/4 READY',
+                  color: '#f59e0b',
+                  icon: '⚡'
+                }
+              };
+            } else {
+              nearestPrompt = {
+                distSq,
+                prompt: {
+                  key: 'E',
+                  title: 'RUNIC MONOLITH DECODER',
+                  subtitle: `CIPHER SYMBOLS: ${collectedCount}/4 ASSEMBLED`,
+                  badge: `${collectedCount}/4`,
+                  color: '#38bdf8',
+                  icon: '🔮'
+                }
+              };
+            }
+          }
+        }
+      }
+
+      // 3. Escape Portal during extraction sequence (radius <= 3.5)
+      if (this.escapeSequenceActive && this.escapePortal && !this.extractionSequenceState.active) {
+        const pDx = this.player.x - this.escapePortal.x;
+        const pDy = this.player.y - this.escapePortal.y;
+        const pDistSq = pDx * pDx + pDy * pDy;
+        if (pDistSq <= 12.25) {
+          if (!nearestPrompt || pDistSq < nearestPrompt.distSq) {
+            nearestPrompt = {
+              distSq: pDistSq,
+              prompt: {
+                key: '★',
+                title: 'SAMPO-PORTTI EXTRACTION GATEWAY',
+                subtitle: 'STEP ONTO DAIS TO TRANSCEND REALM',
+                badge: 'EXTRACTION',
+                color: '#f59e0b',
+                icon: '🌌'
+              }
+            };
+          }
+        }
+      }
+
+      if (nearestPrompt) {
+        this.hud.setInteractionPrompt(nearestPrompt.prompt);
+      } else {
+        this.hud.clearInteractionPrompt();
+      }
+    } else {
+      this.hud.clearInteractionPrompt();
     }
 
     if (this.gateDisplacementCooldown > 0) {

@@ -581,6 +581,98 @@ body, html {
   50% { opacity: 0.4; transform: scale(0.8); }
 }
 
+/* Anchored Interaction Info Prompt Bar (Docked right above the bottom Hotbar / Symbols row) */
+.hud-interaction-bar {
+  position: absolute;
+  bottom: calc(100% + 10px);
+  left: 50%;
+  transform: translate(-50%, 6px);
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 60;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.16s ease-out, transform 0.16s ease-out, visibility 0.16s ease-out;
+}
+
+.hud-interaction-bar.visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, 0);
+}
+
+.interaction-pill {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(10, 16, 28, 0.94);
+  border: 1.5px solid var(--prompt-theme-color, #38bdf8);
+  border-radius: 6px;
+  padding: 5px 14px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7), 0 0 14px var(--prompt-glow-color, rgba(56, 189, 248, 0.35));
+  backdrop-filter: blur(8px);
+  white-space: nowrap;
+}
+
+.prompt-keycap {
+  font-family: var(--font-mono);
+  font-weight: 900;
+  font-size: 11px;
+  color: #0f172a;
+  background: var(--prompt-theme-color, #facc15);
+  border-radius: 4px;
+  padding: 2px 7px;
+  min-width: 20px;
+  text-align: center;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  letter-spacing: 0.5px;
+}
+
+.prompt-details {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.prompt-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.prompt-icon {
+  font-size: 12px;
+}
+
+.prompt-title {
+  font-family: var(--font-rune);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.8px;
+  color: #ffffff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8);
+}
+
+.prompt-badge {
+  font-family: var(--font-mono);
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.8px;
+  padding: 0 5px;
+  border-radius: 3px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.prompt-sub {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.4px;
+  color: #94a3b8;
+}
+
 /* Bottom HUD: Player Vitals & Action Bar */
 #hud-bottom {
   position: absolute;

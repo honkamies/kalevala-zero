@@ -6,7 +6,7 @@ services:
     container_name: sampo_proxy
     restart: unless-stopped
     ports:
-      - "8088:80"
+      - "5173:80"
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile
       - ./client/dist:/srv

@@ -647,87 +647,103 @@ export class ParticleSystem {
     });
   }
 
-  // Cataclysmic Hero Vessel Explosion & Debris Scatter
+  // Dissolving small red particles (peeling off dying hero)
+  emitRedDissolve(x: number, y: number, count: number = 2) {
+    if (this.particles.length >= ParticleSystem.MAX_PARTICLES) return;
+    const redShades = ['#ef4444', '#dc2626', '#b91c1c', '#f87171', '#ff1744'];
+    for (let i = 0; i < count; i++) {
+      const color = redShades[Math.floor(Math.random() * redShades.length)];
+      const isPixel = Math.random() < 0.55;
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * 0.35,
+        y: y + (Math.random() - 0.5) * 0.35,
+        z: 0.1 + Math.random() * 0.8,
+        vx: (Math.random() - 0.5) * 1.4,
+        vy: (Math.random() - 0.5) * 1.4,
+        vz: 1.2 + Math.random() * 2.8,
+        size: isPixel ? (1.5 + Math.random() * 1.5) : (1.2 + Math.random() * 1.8),
+        color,
+        glowColor: '#ef4444',
+        alpha: 0.95,
+        life: 0.35 + Math.random() * 0.45,
+        maxLife: 0.8,
+        decay: 1.8,
+        shape: isPixel ? 'pixel' : 'circle'
+      });
+    }
+  }
+
+  // Hero Vessel Dissolution & Explosion: Shatters completely into a cloud of small red particles (Zero large circles)
   emitHeroExplosion(x: number, y: number, archetype: string = 'soturi') {
-    const theme = {
-      soturi: { primary: '#38bdf8', secondary: '#facc15', tertiary: '#ffffff', glow: '#0284c7' },
-      runoseppä: { primary: '#f97316', secondary: '#f59e0b', tertiary: '#ef4444', glow: '#ea580c' },
-      tietäjä: { primary: '#c084fc', secondary: '#ec4899', tertiary: '#38bdf8', glow: '#a855f7' },
-      korvenraivaaja: { primary: '#10b981', secondary: '#84cc16', tertiary: '#38bdf8', glow: '#059669' }
-    }[archetype] || { primary: '#38bdf8', secondary: '#facc15', tertiary: '#ffffff', glow: '#0284c7' };
+    const redPalette = [
+      '#ef4444', // vibrant scarlet red
+      '#dc2626', // deep crimson
+      '#b91c1c', // dark blood red
+      '#f87171', // glowing ruby red
+      '#ff1744', // electric neon red
+      '#ff4d6d', // hot cyber magenta-red
+      '#fca5a5', // soft ember highlight
+      '#991b1b', // charred ruby
+      '#ffffff'  // white-hot spark
+    ];
 
-    // 1. Shattered Armor, Runes, and Cyber Core Shards (36 to 48 flying debris pieces)
-    const shardCount = 42;
-    for (let i = 0; i < shardCount; i++) {
-      const angle = (i / shardCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.4;
-      const speed = 4.5 + Math.random() * 9.5;
-      const vz = 3.5 + Math.random() * 8.5;
-      const shapeRand = Math.random();
-      const shape: HeroShard['shape'] = shapeRand < 0.35
-        ? 'armor_shard'
-        : (shapeRand < 0.65 ? 'rune_plate' : (shapeRand < 0.85 ? 'cyber_gear' : 'plasma_core'));
+    // 1. High-Density Radial Burst of Small Red Particles (110 particles)
+    const burstCount = 110;
+    for (let i = 0; i < burstCount; i++) {
+      const angle = (i / burstCount) * Math.PI * 2 + (Math.random() - 0.5) * 0.3;
+      const speed = 1.8 + Math.random() * 7.5;
+      const vz = 0.8 + Math.random() * 5.2;
+      const color = redPalette[Math.floor(Math.random() * redPalette.length)];
+      const isPixel = Math.random() < 0.5;
+      const isTiny = Math.random() < 0.65;
 
-      const colors = [theme.primary, theme.secondary, theme.tertiary, '#ffffff', '#0f172a'];
-      const color = colors[Math.floor(Math.random() * colors.length)];
-      const glyph = this.runicGlyphs[Math.floor(Math.random() * this.runicGlyphs.length)];
-
-      // Random polygon vertices for irregular armor shard edges
-      const pts: { x: number; y: number }[] = [];
-      const numPts = 3 + Math.floor(Math.random() * 3);
-      for (let p = 0; p < numPts; p++) {
-        const pAng = (p / numPts) * Math.PI * 2;
-        const pDist = 0.4 + Math.random() * 0.6;
-        pts.push({ x: Math.cos(pAng) * pDist, y: Math.sin(pAng) * pDist });
-      }
-
-      this.heroShards.push({
-        x: x + (Math.random() - 0.5) * 0.3,
-        y: y + (Math.random() - 0.5) * 0.3,
-        z: 0.6 + Math.random() * 0.8,
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * 0.25,
+        y: y + (Math.random() - 0.5) * 0.25,
+        z: 0.15 + Math.random() * 0.7,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
         vz,
-        rot: Math.random() * Math.PI * 2,
-        vRot: (Math.random() - 0.5) * 18,
-        size: 5 + Math.random() * 10,
+        size: isTiny ? (1.5 + Math.random() * 1.2) : (2.4 + Math.random() * 1.6),
         color,
-        glowColor: theme.glow,
+        glowColor: '#ef4444',
         alpha: 1.0,
-        life: 2.2 + Math.random() * 1.0,
-        maxLife: 3.2,
-        shape,
-        glyph,
-        points: pts,
-        trail: []
+        life: 0.5 + Math.random() * 0.85,
+        maxLife: 1.35,
+        decay: 1.6,
+        shape: isPixel ? 'pixel' : 'circle'
       });
     }
 
-    // 2. Multi-Ring Concentric Shockwaves
-    this.emitShockwave(x, y, 7.5, theme.primary);
-    this.emitShockwave(x, y, 5.5, '#ef4444');
-    this.emitShockwave(x, y, 3.5, '#ffffff');
-    this.emitShockwave(x, y, 9.0, theme.secondary);
-
-    // 3. Pixel Glitch Disintegration Cloud (45 voxel blocks)
-    for (let k = 0; k < 45; k++) {
-      this.emitPixelGlitch(x + (Math.random() - 0.5) * 0.8, y + (Math.random() - 0.5) * 0.8, theme.primary);
-      if (k % 2 === 0) {
-        this.emitPixelGlitch(x + (Math.random() - 0.5) * 0.8, y + (Math.random() - 0.5) * 0.8, '#ef4444');
-      }
+    // 2. Slow-Drifting Floating Red Ember / Dissolution Nanite Cloud (55 particles)
+    const driftCount = 55;
+    for (let k = 0; k < driftCount; k++) {
+      const color = redPalette[Math.floor(Math.random() * redPalette.length)];
+      const isPixel = Math.random() < 0.4;
+      this.particles.push({
+        x: x + (Math.random() - 0.5) * 0.5,
+        y: y + (Math.random() - 0.5) * 0.5,
+        z: 0.1 + Math.random() * 0.9,
+        vx: (Math.random() - 0.5) * 1.1,
+        vy: (Math.random() - 0.5) * 1.1,
+        vz: 1.4 + Math.random() * 3.4, // Floating gently upward as it dissolves
+        size: 1.2 + Math.random() * 1.5,
+        color,
+        glowColor: '#dc2626',
+        alpha: 0.95,
+        life: 0.9 + Math.random() * 1.1,
+        maxLife: 2.0,
+        decay: 1.0,
+        shape: isPixel ? 'pixel' : 'circle'
+      });
     }
 
-    // 4. Floating Ancient Runic Glyphs (18 floating glyphs)
-    for (let r = 0; r < 18; r++) {
-      this.emitRunicGlyph(x + (Math.random() - 0.5) * 0.8, y + (Math.random() - 0.5) * 0.8, theme.secondary);
-    }
+    // 3. Fast High-Velocity Micro Sparks (35 sparks)
+    this.emitSparks(x, y, 0.35, '#ef4444', 20);
+    this.emitSparks(x, y, 0.55, '#f87171', 15);
 
-    // 5. Blazing Plasma Sparks (40 high-velocity sparks)
-    this.emitSparks(x, y, 0.5, theme.tertiary, 25);
-    this.emitSparks(x, y, 0.8, '#f59e0b', 20);
-
-    // 6. Permanent Charred & Runic Explosion Crater Ground Decal
-    this.spawnDecal(x, y, 22, '#0f172a', 0.85, 'scorch');
-    this.spawnDecal(x, y, 14, '#ef4444', 0.6, 'scorch');
+    // 4. Subtle, compact charred scorch mark on the ground (no giant blast ring)
+    this.spawnDecal(x, y, 7, '#7f1d1d', 0.55, 'scorch');
   }
 
   // High-Energy Reality-Tearing Particle Displacement & Spacetime Chaos

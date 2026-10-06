@@ -211,17 +211,17 @@ export class HeroRenderer {
     if (sprite) {
       if (options?.isDying) {
         ctx.save();
-        ctx.filter = 'brightness(3.5) contrast(1.6)';
+        ctx.filter = 'brightness(2.2) contrast(1.5) drop-shadow(0 0 8px #ef4444)';
         ctx.drawImage(sprite, hx, hy, spriteSize, spriteSize);
         ctx.restore();
 
-        // High-voltage containment failure lightning arcs across hero body
-        for (let a = 0; a < 3; a++) {
+        // Crimson nanite dissolution arcs across hero body
+        for (let a = 0; a < 4; a++) {
           ctx.beginPath();
           ctx.moveTo(hx + Math.random() * spriteSize, hy + Math.random() * spriteSize);
           ctx.lineTo(hx + Math.random() * spriteSize, hy + Math.random() * spriteSize);
-          ctx.strokeStyle = Math.random() > 0.5 ? '#ef4444' : '#38bdf8';
-          ctx.lineWidth = 2.5 * scale;
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 1.8 * scale;
           ctx.stroke();
         }
       } else if (options?.isHurt) {

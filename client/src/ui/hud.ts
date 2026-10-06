@@ -7,6 +7,15 @@ import { HeroRenderer } from '../engine/hero_renderer';
 
 export type LogType = 'loot' | 'kill' | 'heal' | 'skill' | 'rune' | 'level' | 'system' | 'alert';
 
+export interface InteractionPromptOptions {
+  key?: string;
+  title: string;
+  subtitle?: string;
+  badge?: string;
+  color?: string;
+  icon?: string;
+}
+
 export class HUD {
   private root: HTMLElement;
   private topBarEl!: HTMLElement;
@@ -19,6 +28,14 @@ export class HUD {
   private logFeedEl!: HTMLElement;
   private maxLogs: number = 8;
   private runicBannerEl: HTMLElement | null = null;
+
+  // Interaction Info Prompt Bar
+  private interactionBarEl!: HTMLElement;
+  private promptKeycapEl!: HTMLElement;
+  private promptIconEl!: HTMLElement;
+  private promptTitleEl!: HTMLElement;
+  private promptBadgeEl!: HTMLElement;
+  private promptSubEl!: HTMLElement;
 
   // Vitals elements
   private hpFillEl!: HTMLElement;
@@ -165,6 +182,21 @@ export class HUD {
 
       <!-- BOTTOM HUD (Vitals, Ability Bar & Quick Controls) -->
       <div id="hud-bottom">
+        <!-- Floating Anchored Interaction Info Prompt Bar (Docked right above the bottom Hotbar / Symbols row) -->
+        <div id="hud-interaction-bar" class="hud-interaction-bar">
+          <div class="interaction-pill" id="hud-interaction-pill">
+            <div class="prompt-keycap" id="prompt-keycap">E</div>
+            <div class="prompt-details">
+              <div class="prompt-title-row">
+                <span class="prompt-icon" id="prompt-icon">📦</span>
+                <span class="prompt-title" id="prompt-title">OPEN CHEST</span>
+                <span class="prompt-badge" id="prompt-badge" style="display:none;">EASY</span>
+              </div>
+              <div class="prompt-sub" id="prompt-sub">● EASY HARDNESS (3 KEYS)</div>
+            </div>
+          </div>
+        </div>
+
         <!-- Vitals Plate -->
         <div class="vitals-plate">
           <!-- Level / Phenotype Avatar -->
@@ -303,6 +335,81 @@ export class HUD {
     this.cdPotEl = document.getElementById('cd-overlay-pot')!;
     this.potCountEl = document.getElementById('potion-count-badge')!;
     this.arsenalTextEl = document.getElementById('hud-arsenal-text')!;
+
+    // Cache Interaction Info Prompt Elements
+    this.interactionBarEl = document.getElementById('hud-interaction-bar')!;
+    this.promptKeycapEl = document.getElementById('prompt-keycap')!;
+    this.promptIconEl = document.getElementById('prompt-icon')!;
+    this.promptTitleEl = document.getElementById('prompt-title')!;
+    this.promptBadgeEl = document.getElementById('prompt-badge')!;
+    this.promptSubEl = document.getElementById('prompt-sub')!;
+  }
+
+  setInteractionPrompt(options: InteractionPromptOptions) {
+    if (!this.interactionBarEl) return;
+    const color = options.color || '#38bdf8';
+    this.interactionBarEl.style.setProperty('--prompt-theme-color', color);
+    this.interactionBarEl.style.setProperty('--prompt-glow-color', `${color}55`);
+
+    if (this.promptKeycapEl) {
+      this.promptKeycapEl.textContent = options.key || 'E';
+      if (options.key === '🔒') {
+        this.promptKeycapEl.style.background = '#ef4444';
+        this.promptKeycapEl.style.color = '#ffffff';
+      } else if (options.key === '✓') {
+        this.promptKeycapEl.style.background = '#10b981';
+        this.promptKeycapEl.style.color = '#ffffff';
+      } else {
+        this.promptKeycapEl.style.background = color;
+        this.promptKeycapEl.style.color = '#0f172a';
+      }
+    }
+
+    if (this.promptIconEl) {
+      if (options.icon) {
+        this.promptIconEl.textContent = options.icon;
+        this.promptIconEl.style.display = 'inline-block';
+      } else {
+        this.promptIconEl.style.display = 'none';
+      }
+    }
+
+    if (this.promptTitleEl) {
+      this.promptTitleEl.textContent = options.title;
+    }
+
+    if (this.promptBadgeEl) {
+      if (options.badge) {
+        this.promptBadgeEl.textContent = options.badge;
+        this.promptBadgeEl.style.display = 'inline-block';
+        this.promptBadgeEl.style.borderColor = `${color}88`;
+        this.promptBadgeEl.style.color = color;
+        this.promptBadgeEl.style.background = `${color}18`;
+      } else {
+        this.promptBadgeEl.style.display = 'none';
+      }
+    }
+
+    if (this.promptSubEl) {
+      if (options.subtitle) {
+        this.promptSubEl.textContent = options.subtitle;
+        this.promptSubEl.style.display = 'block';
+        if (options.key === '🔒') {
+          this.promptSubEl.style.color = '#f87171';
+        } else {
+          this.promptSubEl.style.color = '#94a3b8';
+        }
+      } else {
+        this.promptSubEl.style.display = 'none';
+      }
+    }
+
+    this.interactionBarEl.classList.add('visible');
+  }
+
+  clearInteractionPrompt() {
+    if (!this.interactionBarEl) return;
+    this.interactionBarEl.classList.remove('visible');
   }
 
   addLog(text: string, type: LogType = 'system') {
@@ -993,6 +1100,7 @@ export class HUD {
   }
 
   hide() {
+    this.clearInteractionPrompt();
     const el = document.getElementById('hud-container');
     if (el) el.style.display = 'none';
   }

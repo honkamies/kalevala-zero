@@ -921,11 +921,11 @@ export class IsometricRenderer {
       }
     }
 
-    // 2. Heavy Pulsing Dark Crimson & Amber Perimeter Vignette
-    const vigGrad = ctx.createRadialGradient(cw / 2, ch / 2, cw * 0.2, cw / 2, ch / 2, cw * 0.75);
+    // 2. Soft Cinematic Screen Edge Vignette (Zero harsh circles or rings)
+    const vigGrad = ctx.createRadialGradient(cw / 2, ch / 2, cw * 0.35, cw / 2, ch / 2, cw * 0.85);
     vigGrad.addColorStop(0, 'rgba(0, 0, 0, 0)');
-    vigGrad.addColorStop(0.7, isHitStop ? 'rgba(127, 29, 29, 0.5)' : 'rgba(239, 68, 68, 0.55)');
-    vigGrad.addColorStop(1, 'rgba(15, 3, 5, 0.94)');
+    vigGrad.addColorStop(0.75, 'rgba(15, 3, 5, 0.45)');
+    vigGrad.addColorStop(1, 'rgba(10, 2, 4, 0.88)');
     ctx.fillStyle = vigGrad;
     ctx.fillRect(0, 0, cw, ch);
 
@@ -1442,24 +1442,8 @@ export class IsometricRenderer {
     const isDyingExploded = player.isDead || (deathState && deathState.phase === 'exploding');
     const isDyingHitStop = player.isDying && deathState && deathState.phase === 'hitstop';
 
-    // If hero has already exploded, render expanding/dissipating core remnant and return
+    // If hero has already exploded, the vessel has dissolved into small red particles (Zero large circles)
     if (isDyingExploded) {
-      const flashProgress = deathState ? Math.min(1.0, (deathState.timer - deathState.pauseDuration) / 1.6) : 1.0;
-      if (flashProgress < 1.0) {
-        const coreAlpha = Math.max(0, 1.0 - flashProgress);
-        const coreRadius = (20 + flashProgress * 54) * z;
-        ctx.beginPath();
-        ctx.arc(0, -20 * z, coreRadius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(239, 68, 68, ${coreAlpha * 0.35})`;
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 18;
-        ctx.fill();
-
-        ctx.beginPath();
-        ctx.arc(0, -20 * z, coreRadius * 0.45, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(255, 255, 255, ${coreAlpha * 0.75})`;
-        ctx.fill();
-      }
       ctx.restore();
       return;
     }
@@ -1639,6 +1623,10 @@ export class IsometricRenderer {
 
     // 6. Draw Authentic Hand-Drawn Hero Sprite with War Paint & Implant Overlays
     const isFacingLeft = screenDx < 0;
+    if (isDyingHitStop && deathState) {
+      const hitProgress = Math.min(1.0, deathState.timer / (deathState.pauseDuration || 0.42));
+      ctx.globalAlpha = Math.max(0.18, 1.0 - hitProgress * 0.75);
+    }
     HeroRenderer.drawInGameHero(ctx, 0, heightOffset + 8 * z, 0.95 * z, player.appearance, {
       isMoving: player.isMoving,
       walkTimer: player.walkTimer,
@@ -1647,6 +1635,7 @@ export class IsometricRenderer {
       isCharging: player.isChargingSpecial,
       isDying: isDyingHitStop
     });
+    ctx.globalAlpha = 1.0;
 
     // 7. Dynamic Fluid Weapon Effects (Distinct Visual Effect per Archetype)
     if (player.meleeSwingTimer > 0 && !player.isDying && !player.isDead) {
@@ -2239,75 +2228,30 @@ export class IsometricRenderer {
       ctx.stroke();
     }
 
-    // 5. Floating [E] DECRYPT / OPEN Prompt Badge (High Contrast & Clear Typography)
+    // 5. Minimal, non-intrusive in-world proximity cue (full info text is anchored on HUD above action bar)
     if (isNearby) {
-      const promptY = spriteY - 34 * z + Math.sin(now * 2.5) * 2.5 * z;
-      const headFontSize = Math.max(12, Math.round(13 * Math.min(1.15, Math.max(0.9, z))));
-      const subFontSize = Math.max(10, Math.round(11 * Math.min(1.15, Math.max(0.9, z))));
+      const promptY = spriteY - 24 * z + Math.sin(now * 3.0) * 1.5 * z;
+      const kw = 20 * z;
+      const kh = 16 * z;
 
-      if (chest.isLocked) {
-        const titleText = '🔒 [LOCKED CHEST]';
-        const subText = 'SOLVE SECTOR PUZZLE TO UNLOCK';
+      ctx.save();
+      ctx.fillStyle = 'rgba(8, 14, 26, 0.8)';
+      ctx.strokeStyle = chest.isLocked ? '#ef4444' : chestColor;
+      ctx.lineWidth = 1.2 * z;
+      ctx.shadowColor = chest.isLocked ? '#ef4444' : chestColor;
+      ctx.shadowBlur = 6 * z;
+      ctx.beginPath();
+      ctx.roundRect(-kw / 2, promptY - kh / 2, kw, kh, [3 * z]);
+      ctx.fill();
+      ctx.stroke();
 
-        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
-        const w1 = ctx.measureText(titleText).width;
-        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
-        const w2 = ctx.measureText(subText).width;
-        const boxW = Math.max(170, Math.max(w1, w2) + 28);
-        const boxH = 40;
-
-        ctx.fillStyle = 'rgba(8, 14, 26, 0.95)';
-        ctx.strokeStyle = '#ef4444';
-        ctx.lineWidth = 2;
-        ctx.shadowColor = '#ef4444';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.roundRect(-boxW / 2, promptY - boxH / 2, boxW, boxH, [6]);
-        ctx.fill();
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
-        ctx.fillStyle = '#ef4444';
-        ctx.fillText(titleText, 0, promptY - 7);
-
-        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
-        ctx.fillStyle = '#94a3b8';
-        ctx.fillText(subText, 0, promptY + 8);
-      } else {
-        const titleText = `[E] OPEN ${chest.chestColor.toUpperCase()} CHEST`;
-        const subText = `● ${chest.hardness.toUpperCase()} HARDNESS (${chest.keySequence.length} KEYS)`;
-
-        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
-        const w1 = ctx.measureText(titleText).width;
-        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
-        const w2 = ctx.measureText(subText).width;
-        const boxW = Math.max(180, Math.max(w1, w2) + 28);
-        const boxH = 42;
-
-        ctx.fillStyle = 'rgba(8, 14, 26, 0.95)';
-        ctx.strokeStyle = chestColor;
-        ctx.lineWidth = 2;
-        ctx.shadowColor = chestColor;
-        ctx.shadowBlur = 12;
-        ctx.beginPath();
-        ctx.roundRect(-boxW / 2, promptY - boxH / 2, boxW, boxH, [6]);
-        ctx.fill();
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.font = `bold ${headFontSize}px Rajdhani, sans-serif`;
-        ctx.fillStyle = '#ffffff';
-        ctx.fillText(titleText, 0, promptY - 8);
-
-        ctx.font = `bold ${subFontSize}px 'JetBrains Mono', monospace`;
-        ctx.fillStyle = chestColor;
-        ctx.fillText(subText, 0, promptY + 8);
-      }
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `bold ${Math.round(10 * z)}px Rajdhani, sans-serif`;
+      ctx.fillStyle = chest.isLocked ? '#ef4444' : '#ffffff';
+      ctx.shadowBlur = 0;
+      ctx.fillText(chest.isLocked ? '🔒' : 'E', 0, promptY);
+      ctx.restore();
     }
 
     ctx.restore();
@@ -2412,33 +2356,31 @@ export class IsometricRenderer {
       }
     });
 
-    // 6. Floating [E] DECODE / SYNCHRONIZE Prompt Badge
+    // 6. Minimal in-world proximity cue (full info text is anchored on HUD above action bar)
     if (isNearby) {
-      const promptY = -66 * z + Math.sin(performance.now() * 0.005) * 3 * z;
-      const promptText = puzzle.isSolved
-        ? '✓ PROTOCOL SYNCHRONIZED'
-        : (isAllCollected
-          ? '⚡ [E] SYNCHRONIZE (4/4)'
-          : `[E] RUNIC DECODER (${collectedCount}/4)`);
+      const promptY = -58 * z + Math.sin(performance.now() * 0.004) * 2 * z;
+      const kw = 20 * z;
+      const kh = 16 * z;
       const badgeBorder = puzzle.isSolved ? '#10b981' : (isAllCollected ? '#f59e0b' : '#38bdf8');
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.94)';
+      ctx.save();
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
       ctx.strokeStyle = badgeBorder;
-      ctx.lineWidth = 1.5;
+      ctx.lineWidth = 1.2 * z;
       ctx.shadowColor = badgeBorder;
-      ctx.shadowBlur = isAllCollected ? 14 : 4;
-
-      const badgeW = (isAllCollected ? 150 : 130) * z;
+      ctx.shadowBlur = isAllCollected ? 8 * z : 4 * z;
       ctx.beginPath();
-      ctx.roundRect(-badgeW / 2, promptY - 10 * z, badgeW, 20 * z, [4]);
+      ctx.roundRect(-kw / 2, promptY - kh / 2, kw, kh, [3 * z]);
       ctx.fill();
       ctx.stroke();
 
-      ctx.font = `bold ${Math.floor(11 * z)}px Rajdhani, sans-serif`;
       ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.font = `bold ${Math.round(10 * z)}px Rajdhani, sans-serif`;
       ctx.fillStyle = puzzle.isSolved ? '#10b981' : (isAllCollected ? '#fef08a' : '#38bdf8');
       ctx.shadowBlur = 0;
-      ctx.fillText(promptText, 0, promptY + 4 * z);
+      ctx.fillText(puzzle.isSolved ? '✓' : 'E', 0, promptY);
+      ctx.restore();
     }
 
     ctx.restore();
