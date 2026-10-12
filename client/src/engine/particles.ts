@@ -187,7 +187,7 @@ export class ParticleSystem {
           life: 0.5 + Math.random() * 0.4,
           maxLife: 0.9,
           decay: 1.4,
-          shape: 'circle'
+          shape: 'pixel'
         });
       }
 
@@ -526,16 +526,10 @@ export class ParticleSystem {
     });
   }
 
-  // Shockwave ring (Ukonvasara / Boss Slam / Explosion)
+  // Shockwave (Kinetic shrapnel / sparks instead of expanding circle rings)
   emitShockwave(x: number, y: number, maxRadius: number = 3.5, color: string = '#38bdf8') {
-    this.shockwaves.push({
-      x,
-      y,
-      radius: 0.2,
-      maxRadius,
-      color,
-      alpha: 1.0
-    });
+    // Pure kinetic spark and pixel shrapnel burst — no expanding circles or rings
+    this.emitSparks(x, y, 0.25, color, Math.min(14, Math.max(6, Math.round(maxRadius * 3))));
   }
 
   // Level Up / Beacon Shimmer
@@ -711,7 +705,7 @@ export class ParticleSystem {
         life: 0.5 + Math.random() * 0.85,
         maxLife: 1.35,
         decay: 1.6,
-        shape: isPixel ? 'pixel' : 'circle'
+        shape: isPixel ? 'pixel' : 'shard'
       });
     }
 
@@ -734,7 +728,7 @@ export class ParticleSystem {
         life: 0.9 + Math.random() * 1.1,
         maxLife: 2.0,
         decay: 1.0,
-        shape: isPixel ? 'pixel' : 'circle'
+        shape: isPixel ? 'pixel' : 'shard'
       });
     }
 

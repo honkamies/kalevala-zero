@@ -1081,20 +1081,7 @@ export class PlatformerRenderer {
     const ctx = this.ctx;
     const cam = this.camera;
 
-    // 1. Shockwaves
-    particles.shockwaves.forEach(sw => {
-      const pos = cam.worldToScreen(sw.x, sw.y);
-      const rad = sw.radius * cam.tileSize * cam.zoom;
-      ctx.save();
-      ctx.beginPath();
-      ctx.arc(pos.x, pos.y, Math.max(1, rad), 0, Math.PI * 2);
-      ctx.strokeStyle = sw.color;
-      ctx.lineWidth = Math.max(2.0, 5.0 * sw.alpha * cam.zoom);
-      ctx.globalAlpha = Math.max(0, sw.alpha * 0.85);
-      ctx.stroke();
-      ctx.restore();
-      this.addPointLight(pos.x, pos.y, rad * 1.5, sw.color);
-    });
+    // 1. Shockwaves: (Removed circle overlays per aesthetic spec)
 
     // 2. Flying Gore Gibs & Severed Organs
     particles.gibs.forEach(g => {
@@ -1202,24 +1189,8 @@ export class PlatformerRenderer {
         grad.addColorStop(0, pt.color);
         grad.addColorStop(0.6, 'rgba(153, 27, 27, 0.45)');
         grad.addColorStop(1, 'rgba(0, 0, 0, 0)');
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, sz * 0.6, 0, Math.PI * 2);
-        ctx.fill();
-      } else if (pt.shape === 'circle' || pt.gravity !== undefined) {
-        // Blood Droplet / Spark
         ctx.fillStyle = pt.color;
-        ctx.beginPath();
-        ctx.arc(pos.x, pos.y, Math.max(0.85, sz * 0.5), 0, Math.PI * 2);
-        ctx.fill();
-
-        // Glistening specular highlight on large blood drops
-        if (sz > 3.2 && (pt.color === '#dc2626' || pt.color === '#ef4444' || pt.color === '#991b1b')) {
-          ctx.fillStyle = '#ffffff';
-          ctx.beginPath();
-          ctx.arc(pos.x - sz * 0.15, pos.y - sz * 0.15, sz * 0.15, 0, Math.PI * 2);
-          ctx.fill();
-        }
+        ctx.fillRect(pos.x - sz * 0.5, pos.y - sz * 0.5, sz, sz);
       } else {
         ctx.fillStyle = pt.color;
         ctx.fillRect(pos.x - sz * 0.5, pos.y - sz * 0.5, sz, sz);

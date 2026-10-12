@@ -3,6 +3,7 @@ import { soundEngine } from '../engine/audio';
 import { graphicsEngine, PixelResolutionMode } from '../engine/graphics';
 import { SoundSettingsModalUI } from './sound_settings_modal';
 import { GraphicsSettingsModalUI } from './graphics_settings_modal';
+import { inputManager } from '../engine/input';
 
 export class PauseMenuUI {
   private root: HTMLElement;
@@ -104,66 +105,141 @@ export class PauseMenuUI {
         <!-- MAIN CONTENT: 2-COLUMN MANUAL & AUDIO -->
         <div style="display:grid; grid-template-columns: 1.1fr 0.9fr; gap: 20px;">
           
-          <!-- LEFT COLUMN: CONTROLS & COMBAT SCHEME -->
-          <div style="background: rgba(9, 14, 23, 0.7); border: 1px solid var(--border-dim); border-radius: 6px; padding: 16px;">
-            <div style="font-family:var(--font-mono); font-size:12px; color:var(--cyan-core); font-weight:700; margin-bottom:12px; display:flex; align-items:center; gap:6px;">
-              <span>🎮</span> TACTICAL CONTROL BINDINGS
+          <!-- LEFT COLUMN: CONTROLS & COMBAT SCHEME (DUAL KEYBOARD & XBOX GAMEPAD) -->
+          <div style="background: rgba(9, 14, 23, 0.7); border: 1px solid var(--border-dim); border-radius: 6px; padding: 16px; display:flex; flex-direction:column; gap:10px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.08); padding-bottom:8px;">
+              <div style="font-family:var(--font-mono); font-size:12px; color:var(--cyan-core); font-weight:700; display:flex; align-items:center; gap:6px;">
+                <span>🎮</span> TACTICAL CONTROLS
+              </div>
+              <div style="display:flex; gap:6px;">
+                <button id="tab-controls-kb" style="
+                  font-family:var(--font-mono); font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:4px; cursor:pointer;
+                  border: 1px solid ${inputManager.lastInputDevice === 'keyboard' ? '#38bdf8' : 'rgba(255,255,255,0.15)'};
+                  background: ${inputManager.lastInputDevice === 'keyboard' ? 'rgba(56,189,248,0.2)' : 'transparent'};
+                  color: ${inputManager.lastInputDevice === 'keyboard' ? '#38bdf8' : '#94a3b8'};
+                ">⌨️ Keyboard</button>
+                <button id="tab-controls-pad" style="
+                  font-family:var(--font-mono); font-size:10.5px; font-weight:700; padding:3px 9px; border-radius:4px; cursor:pointer;
+                  border: 1px solid ${inputManager.lastInputDevice === 'gamepad' ? '#22c55e' : 'rgba(255,255,255,0.15)'};
+                  background: ${inputManager.lastInputDevice === 'gamepad' ? 'rgba(34,197,94,0.2)' : 'transparent'};
+                  color: ${inputManager.lastInputDevice === 'gamepad' ? '#22c55e' : '#94a3b8'};
+                ">🎮 Xbox Pad</button>
+              </div>
             </div>
 
-            <div style="display:flex; flex-direction:column; gap:8px; font-size:12px;">
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+            <!-- CONTROLLER HARDWARE STATUS BADGE -->
+            <div id="esc-controller-status-banner" style="
+              font-family:var(--font-mono); font-size:10px; padding:4px 8px; border-radius:4px;
+              background: ${inputManager.gamepadConnected ? 'rgba(34,197,94,0.12)' : 'rgba(148,163,184,0.08)'};
+              border: 1px solid ${inputManager.gamepadConnected ? 'rgba(34,197,94,0.35)' : 'rgba(148,163,184,0.18)'};
+              color: ${inputManager.gamepadConnected ? '#4ade80' : '#94a3b8'};
+              display:flex; justify-content:space-between; align-items:center;
+            ">
+              <span>${inputManager.gamepadConnected ? `● Xbox / Gamepad Active: ${inputManager.gamepadName.split('(')[0].trim() || 'Connected'}` : '○ No Gamepad Detected (Hot-plug any Xbox controller anytime)'}</span>
+              <span>${inputManager.gamepadConnected ? '⚡ Haptics Ready' : '⌨️ Keyboard Ready'}</span>
+            </div>
+
+            <!-- KEYBOARD SCHEME -->
+            <div id="controls-view-keyboard" style="display:${inputManager.lastInputDevice === 'keyboard' ? 'flex' : 'none'}; flex-direction:column; gap:7px; font-size:11.5px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
                 <span style="color:var(--text-muted);">Movement / Navigation</span>
                 <span class="esc-key-badge">WASD / MMB Hold</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
-                <span style="color:var(--text-muted);">Aim & Attack / Fire</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Aim & Primary Attack</span>
                 <span class="esc-key-badge">Mouse + Left Click</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Special Attack / Aegis Shield</span>
+                <span class="esc-key-badge">Right Click (RMB)</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
                 <span style="color:var(--text-muted);">Active Dodge Roll (I-Frames)</span>
                 <span class="esc-key-badge">Spacebar</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
-                <span style="color:var(--text-muted);">Skill 1 (Ukonvasara EMP)</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Skill 1 (Ukonvasara EMP Slam)</span>
                 <span class="esc-key-badge">1</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
                 <span style="color:var(--text-muted);">Skill 2 (Kipinä Plasma Dash)</span>
                 <span class="esc-key-badge">2</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
                 <span style="color:var(--text-muted);">Skill 3 (Tuoni Void Shield)</span>
                 <span class="esc-key-badge">3</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
-                <span style="color:var(--text-muted);">Skill 4 (Sampo Overclock)</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Skill 4 (Sampo Overclock Frenzy)</span>
                 <span class="esc-key-badge">4 / R</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
-                <span style="color:var(--text-muted);">Quick Cycle Pixel Art Mode</span>
-                <span class="esc-key-badge">F8</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Nano-Repair Potion (+60 HP)</span>
+                <span class="esc-key-badge">Q / 5</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
-                <span style="color:var(--text-muted);">Interact (Chests, Puzzles)</span>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Interact (Vaults, Pillars)</span>
                 <span class="esc-key-badge">E</span>
               </div>
-
-              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.06); padding-bottom:4px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
                 <span style="color:var(--text-muted);">Inventory / Gear Paperdoll</span>
                 <span class="esc-key-badge">I / Tab</span>
               </div>
-
               <div style="display:flex; justify-content:space-between; align-items:center;">
                 <span style="color:var(--text-muted);">Character Stats & Attributes</span>
                 <span class="esc-key-badge">C</span>
+              </div>
+            </div>
+
+            <!-- XBOX GAMEPAD SCHEME -->
+            <div id="controls-view-gamepad" style="display:${inputManager.lastInputDevice === 'gamepad' ? 'flex' : 'none'}; flex-direction:column; gap:7px; font-size:11.5px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Analog Movement (2:1 Isometric)</span>
+                <span class="esc-key-badge" style="background:rgba(34,197,94,0.15); border-color:#22c55e; color:#4ade80;">Left Stick / D-Pad</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">360° Twin-Stick Aiming</span>
+                <span class="esc-key-badge" style="background:rgba(34,197,94,0.15); border-color:#22c55e; color:#4ade80;">Right Stick</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Primary Attack / Rapid Strike</span>
+                <span class="esc-key-badge" style="background:rgba(250,204,21,0.15); border-color:#facc15; color:#fde047;">Right Trigger (RT)</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Special Attack / Aegis Shield</span>
+                <span class="esc-key-badge" style="background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#7dd3fc;">Left Trigger (LT)</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Active Dodge Roll / Dash</span>
+                <span class="esc-key-badge" style="background:rgba(239,68,68,0.15); border-color:#ef4444; color:#fca5a5;">Button B</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Interact / Decrypt Vaults</span>
+                <span class="esc-key-badge" style="background:rgba(34,197,94,0.25); border-color:#22c55e; color:#ffffff;">Button A</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Skill 1 (Ukonvasara EMP Slam)</span>
+                <span class="esc-key-badge" style="background:rgba(56,189,248,0.15); border-color:#38bdf8; color:#7dd3fc;">Button X</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Skill 2 (Kipinä Plasma Dash)</span>
+                <span class="esc-key-badge">Right Bumper (RB)</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Skill 3 (Tuoni Void Shield)</span>
+                <span class="esc-key-badge">Left Bumper (LB)</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Skill 4 (Sampo Overclock)</span>
+                <span class="esc-key-badge" style="background:rgba(250,204,21,0.15); border-color:#facc15; color:#fde047;">Button Y</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid rgba(255,255,255,0.05); padding-bottom:3px;">
+                <span style="color:var(--text-muted);">Nano-Repair Potion (+60 HP)</span>
+                <span class="esc-key-badge">D-Pad Up / LS Click</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="color:var(--text-muted);">Tactical Inventory / Stats</span>
+                <span class="esc-key-badge">View (Back) / D-Pad Left</span>
               </div>
             </div>
           </div>
@@ -242,10 +318,10 @@ export class PauseMenuUI {
               <!-- SFX Slider -->
               <div style="display:flex; flex-direction:column; gap:2px;">
                 <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono);">
-                  <span style="color:var(--text-muted);">SFX Volume</span>
-                  <span id="esc-val-sfx" style="color:#fff; font-weight:700;">${Math.round(settings.sfxVolume * 100)}%</span>
+                  <span style="color:var(--text-muted);">SFX Volume <span style="font-size:9.5px; color:#f59e0b;">(Silenced / BGM Only)</span></span>
+                  <span id="esc-val-sfx" style="color:#94a3b8; font-weight:700;">MUTED (0%)</span>
                 </div>
-                <input type="range" id="esc-slider-sfx" min="0" max="100" value="${Math.round(settings.sfxVolume * 100)}" style="width:100%; cursor:pointer;" />
+                <input type="range" id="esc-slider-sfx" min="0" max="100" value="0" disabled style="width:100%; cursor:not-allowed; opacity:0.5;" title="Sound effects silenced until customized SFX are designed" />
               </div>
 
               <!-- Quick Buttons & Track Display -->
@@ -305,6 +381,42 @@ export class PauseMenuUI {
     `;
 
     this.root.appendChild(this.menuEl);
+
+    // Bind Controls View Tabs
+    const tabKb = document.getElementById('tab-controls-kb');
+    const tabPad = document.getElementById('tab-controls-pad');
+    const viewKb = document.getElementById('controls-view-keyboard');
+    const viewPad = document.getElementById('controls-view-gamepad');
+
+    tabKb?.addEventListener('click', () => {
+      if (viewKb) viewKb.style.display = 'flex';
+      if (viewPad) viewPad.style.display = 'none';
+      if (tabKb) {
+        tabKb.style.borderColor = '#38bdf8';
+        tabKb.style.background = 'rgba(56,189,248,0.2)';
+        tabKb.style.color = '#38bdf8';
+      }
+      if (tabPad) {
+        tabPad.style.borderColor = 'rgba(255,255,255,0.15)';
+        tabPad.style.background = 'transparent';
+        tabPad.style.color = '#94a3b8';
+      }
+    });
+
+    tabPad?.addEventListener('click', () => {
+      if (viewKb) viewKb.style.display = 'none';
+      if (viewPad) viewPad.style.display = 'flex';
+      if (tabPad) {
+        tabPad.style.borderColor = '#22c55e';
+        tabPad.style.background = 'rgba(34,197,94,0.2)';
+        tabPad.style.color = '#22c55e';
+      }
+      if (tabKb) {
+        tabKb.style.borderColor = 'rgba(255,255,255,0.15)';
+        tabKb.style.background = 'transparent';
+        tabKb.style.color = '#94a3b8';
+      }
+    });
 
     // Bind Close (X) button
     document.getElementById('btn-esc-close-x')?.addEventListener('click', () => {

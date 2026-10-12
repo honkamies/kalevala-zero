@@ -7,11 +7,11 @@ export class IsometricCamera {
   public targetX: number = 0;
   public targetY: number = 0;
 
-  // Zoom control (Spacious field of view for natural corridor & arena navigation)
+  // Zoom control (Expanded range: 20% closer maxZoom, 50% further minZoom)
   public zoom: number = 0.85;
   public targetZoom: number = 0.85;
-  public minZoom: number = 0.40;
-  public maxZoom: number = 2.0;
+  public minZoom: number = 0.20;
+  public maxZoom: number = 2.40;
 
   public tileWidth: number = 64;
   public tileHeight: number = 32;

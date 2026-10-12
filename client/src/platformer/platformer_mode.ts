@@ -81,8 +81,8 @@ export class PlatformerMode {
 
     // Ensure camera viewport dimensions match the active canvas
     this.camera.handleResize(this.canvas.width, this.canvas.height);
-    this.camera.zoom = 0.75;
-    this.camera.targetZoom = 0.75;
+    this.camera.zoom = 0.55;
+    this.camera.targetZoom = 0.55;
 
     // 1. Generate Platformer Level
     const seed = Math.floor(Math.random() * 100000);
@@ -172,8 +172,8 @@ export class PlatformerMode {
     this.playerCtrl.vx = 0;
     this.playerCtrl.vy = 0;
     this.playerCtrl.hurtTimer = 1.0;
-    this.camera.zoom = 0.75;
-    this.camera.targetZoom = 0.75;
+    this.camera.zoom = 0.55;
+    this.camera.targetZoom = 0.55;
     this.camera.snapTo(this.playerCtrl.x, this.playerCtrl.y);
     soundEngine.playPlatformerWorldEnter();
     particleSystem.emitBeacon(this.playerCtrl.x, this.playerCtrl.y, '#38bdf8');
@@ -209,35 +209,77 @@ export class PlatformerMode {
       return;
     }
 
-    // 1. Gather User Inputs
-    const left = inputManager.keys['a'] || inputManager.keys['arrowleft'];
-    const right = inputManager.keys['d'] || inputManager.keys['arrowright'];
-    const up = inputManager.keys['w'] || inputManager.keys['arrowup'];
-    const down = inputManager.keys['s'] || inputManager.keys['arrowdown'];
-    const jump = inputManager.keys[' '] || inputManager.keys['w'] || inputManager.keys['arrowup'];
-    const justJump = inputManager.justPressedKeys.has(' ') || inputManager.justPressedKeys.has('w') || inputManager.justPressedKeys.has('arrowup');
-    const dash = inputManager.keys['shift'];
+    // 1. Gather User Inputs (Keyboard & Xbox / Gamepad Controller)
+    const gpLeft = inputManager.getLeftStick();
+    const gpDpad = inputManager.getDpad();
 
-    // Aim calculation towards mouse position in world coordinates
-    const mouseWorld = this.camera.screenToWorld(inputManager.mouseScreen.x, inputManager.mouseScreen.y);
-    const toMouseX = mouseWorld.x - this.playerCtrl.x;
-    const toMouseY = mouseWorld.y - this.playerCtrl.y;
-    this.playerCtrl.aimAngle = Math.atan2(toMouseY, toMouseX);
+    const isGpLeft = gpLeft.x < -0.28 || gpDpad.left;
+    const isGpRight = gpLeft.x > 0.28 || gpDpad.right;
+    const isGpUp = gpLeft.y < -0.35 || gpDpad.up;
+    const isGpDown = gpLeft.y > 0.35 || gpDpad.down;
+    const isGpJump = inputManager.isGamepadButtonPressed(0); // A button
+    const isGpJustJump = inputManager.isGamepadButtonJustPressed(0);
+    const isGpDash = inputManager.isGamepadButtonPressed(1) || inputManager.isGamepadButtonPressed(6) || inputManager.isGamepadButtonPressed(4); // B, LT, LB
 
-    if (Math.abs(toMouseX) > 0.4) {
-      this.playerCtrl.facingDir = toMouseX > 0 ? 1 : -1;
+    const left = inputManager.keys['a'] || inputManager.keys['arrowleft'] || isGpLeft;
+    const right = inputManager.keys['d'] || inputManager.keys['arrowright'] || isGpRight;
+    const up = inputManager.keys['w'] || inputManager.keys['arrowup'] || isGpUp;
+    const down = inputManager.keys['s'] || inputManager.keys['arrowdown'] || isGpDown;
+    const jump = inputManager.keys[' '] || inputManager.keys['w'] || inputManager.keys['arrowup'] || isGpJump;
+    const justJump = inputManager.justPressedKeys.has(' ') || inputManager.justPressedKeys.has('w') || inputManager.justPressedKeys.has('arrowup') || isGpJustJump;
+    const dash = inputManager.keys['shift'] || isGpDash;
+
+    // Aim calculation towards mouse position or right analog stick
+    const gpRight = inputManager.getRightStick();
+    const isGpAiming = inputManager.isRightStickAiming();
+    let mouseWorld: { x: number; y: number };
+
+    if (inputManager.lastInputDevice === 'gamepad' && isGpAiming) {
+      this.playerCtrl.aimAngle = Math.atan2(gpRight.y, gpRight.x);
+      if (Math.abs(gpRight.x) > 0.2) {
+        this.playerCtrl.facingDir = gpRight.x > 0 ? 1 : -1;
+      }
+      mouseWorld = {
+        x: this.playerCtrl.x + Math.cos(this.playerCtrl.aimAngle) * 8.0,
+        y: this.playerCtrl.y + Math.sin(this.playerCtrl.aimAngle) * 8.0
+      };
+      const screenPos = this.camera.worldToScreen(mouseWorld.x, mouseWorld.y);
+      inputManager.mouseScreen.x = screenPos.x;
+      inputManager.mouseScreen.y = screenPos.y;
+    } else if (inputManager.lastInputDevice === 'gamepad') {
+      if (left && !right) this.playerCtrl.facingDir = -1;
+      else if (right && !left) this.playerCtrl.facingDir = 1;
+      this.playerCtrl.aimAngle = this.playerCtrl.facingDir > 0 ? 0 : Math.PI;
+      mouseWorld = {
+        x: this.playerCtrl.x + this.playerCtrl.facingDir * 8.0,
+        y: this.playerCtrl.y
+      };
+      const screenPos = this.camera.worldToScreen(mouseWorld.x, mouseWorld.y);
+      inputManager.mouseScreen.x = screenPos.x;
+      inputManager.mouseScreen.y = screenPos.y;
+    } else {
+      mouseWorld = this.camera.screenToWorld(inputManager.mouseScreen.x, inputManager.mouseScreen.y);
+      const toMouseX = mouseWorld.x - this.playerCtrl.x;
+      const toMouseY = mouseWorld.y - this.playerCtrl.y;
+      this.playerCtrl.aimAngle = Math.atan2(toMouseY, toMouseX);
+
+      if (Math.abs(toMouseX) > 0.4) {
+        this.playerCtrl.facingDir = toMouseX > 0 ? 1 : -1;
+      }
     }
 
     // 2. Step Player Physics & Controller (with solid boss barrier collision)
     this.playerCtrl.update(dt, this.level, { left, right, up, down, jump, justJump, dash }, this.colossalBoss);
 
-    // 3. Ranged Shooting (Hold Left Mouse Button to rapid fire!)
-    if (inputManager.isMouseDownLeft && this.shootCooldownTimer <= 0) {
+    // 3. Ranged Shooting (Hold Left Mouse Button, RT, or X to rapid fire!)
+    const isShooting = inputManager.isMouseDownLeft || inputManager.isGamepadButtonPressed(7) || inputManager.isGamepadButtonPressed(2);
+    if (isShooting && this.shootCooldownTimer <= 0) {
       this.handlePlayerShoot(mouseWorld.x, mouseWorld.y);
     }
 
-    // 4. Aegis Energy Shield Barrier & Melee Deflection (Right Mouse Button)
-    if (inputManager.isMouseDownRight) {
+    // 4. Aegis Energy Shield Barrier & Melee Deflection (Right Mouse Button or LT)
+    const isShieldMelee = inputManager.isMouseDownRight || inputManager.isGamepadButtonPressed(6);
+    if (isShieldMelee) {
       if (player.activateEnergyShield()) {
         this.camera.addShake(0.8, 0.08);
         this.hud.addLog('🛡️ Aegis Energy Barrier Active: 5.0s invulnerable barrier!', 'heal');
@@ -246,16 +288,16 @@ export class PlatformerMode {
       }
     }
 
-    // 5. Abilities (1, 2, 3, 4)
-    if (inputManager.justPressedKeys.has('1')) this.handleAbility1();
-    if (inputManager.justPressedKeys.has('2')) this.handleAbility2();
-    if (inputManager.justPressedKeys.has('3')) this.handleAbility3();
-    if (inputManager.justPressedKeys.has('4')) this.handleAbility4();
-    if (inputManager.justPressedKeys.has('q')) {
+    // 5. Abilities (1, 2, 3, 4 / Face buttons & Bumpers)
+    if (inputManager.justPressedKeys.has('1') || inputManager.isGamepadButtonJustPressed(2)) this.handleAbility1();
+    if (inputManager.justPressedKeys.has('2') || inputManager.isGamepadButtonJustPressed(5)) this.handleAbility2();
+    if (inputManager.justPressedKeys.has('3') || inputManager.isGamepadButtonJustPressed(4)) this.handleAbility3();
+    if (inputManager.justPressedKeys.has('4') || inputManager.isGamepadButtonJustPressed(3)) this.handleAbility4();
+    if (inputManager.justPressedKeys.has('q') || inputManager.isGamepadButtonJustPressed(10) || inputManager.isGamepadButtonJustPressed(12)) {
       const used = player.usePotion();
       if (used) this.hud.addLog('Injected Nano-Repair (+60 HP)', 'heal');
     }
-    if (inputManager.justPressedKeys.has('e')) this.handleInteract();
+    if (inputManager.justPressedKeys.has('e') || inputManager.isGamepadButtonJustPressed(0)) this.handleInteract();
 
     // 6. Update Ground & Flying Enemies (Distance culled: only active within 24 tiles of player)
     this.enemies.forEach(e => {

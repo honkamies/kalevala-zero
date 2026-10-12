@@ -80,17 +80,18 @@ export class ChestLockUI {
 
     this.modalEl.innerHTML = `
       <div id="chest-lock-card" style="
-        width: 640px; 
-        max-width: 94vw; 
+        width: 560px; 
+        max-width: 92vw; 
         background: rgba(13, 18, 29, 0.98); 
         border: 2px solid ${chestColor}; 
         border-radius: 10px; 
-        padding: 24px 30px; 
+        padding: 22px 26px; 
         box-shadow: 0 0 35px ${chestColor}44, 0 25px 60px rgba(0,0,0,0.9);
         display: flex;
         flex-direction: column;
         gap: 14px;
         text-align: center;
+        box-sizing: border-box;
       ">
         <!-- HEADER -->
         <div style="display:flex; justify-content:space-between; align-items:center; border-bottom:1px solid var(--border-dim); padding-bottom:10px;">

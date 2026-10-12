@@ -350,23 +350,7 @@ export class IsometricRenderer {
       }
     });
 
-    // 6. RENDER SHOCKWAVES & PARTICLES
-    particles.shockwaves.forEach(sw => {
-      if (sw.x < bounds.minX - 4 || sw.x > bounds.maxX + 4 ||
-          sw.y < bounds.minY - 4 || sw.y > bounds.maxY + 4) return;
-      const relX = sw.x - camX;
-      const relY = sw.y - camY;
-      const sx = vpCenterX + (relX - relY) * halfW;
-      const sy = vpCenterY + (relX + relY) * halfH;
-      ctx.beginPath();
-      ctx.ellipse(sx, sy, sw.radius * 32 * zoom, sw.radius * 16 * zoom, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = sw.color;
-      ctx.lineWidth = 3.5 * zoom;
-      ctx.globalAlpha = sw.alpha;
-      ctx.stroke();
-      ctx.globalAlpha = 1.0;
-    });
-
+    // 6. RENDER HERO PARTICLES & SHARDS (No circle/ring shockwave overlays)
     // Hero Explosion Shards & Shrapnel Debris
     particles.heroShards.forEach(s => {
       const relX = s.x - camX;
@@ -434,10 +418,8 @@ export class IsometricRenderer {
         ctx.stroke();
       } else {
         const sz = s.size * zoom;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, sz, sz * 0.55, 0, 0, Math.PI * 2);
         ctx.fillStyle = s.color;
-        ctx.fill();
+        ctx.fillRect(-sz * 0.5, -sz * 0.5, sz, sz);
       }
 
       ctx.restore();
@@ -507,11 +489,10 @@ export class IsometricRenderer {
         ctx.globalAlpha = p.alpha;
         ctx.fillText(p.glyph, sx, sy);
       } else {
-        ctx.beginPath();
-        ctx.arc(sx, sy, p.size * zoom, 0, Math.PI * 2);
+        const sz = Math.max(1.2, p.size * zoom);
         ctx.fillStyle = p.color;
         ctx.globalAlpha = p.alpha;
-        ctx.fill();
+        ctx.fillRect(sx - sz * 0.5, sy - sz * 0.5, sz, sz);
       }
     });
     ctx.globalAlpha = 1.0;
@@ -1687,21 +1668,7 @@ export class IsometricRenderer {
       const slamGlow = weaponDmgType === 'frost' ? '#0284c7' : (weaponDmgType === 'void' ? '#9333ea' : (weaponDmgType === 'shock' ? '#ca8a04' : '#ea580c'));
 
       ctx.save();
-      // Expanding isometric elemental shockwave ring
-      ctx.beginPath();
-      ctx.ellipse(0, 10 * z, radius, radius * 0.55, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(${slamBaseRgb}, ${alpha * 0.9})`;
-      ctx.lineWidth = 6 * z;
-      ctx.stroke();
-
-      // Inner bright core
-      ctx.beginPath();
-      ctx.ellipse(0, 10 * z, radius * 0.7, radius * 0.38, 0, 0, Math.PI * 2);
-      ctx.strokeStyle = `rgba(254, 240, 138, ${alpha})`;
-      ctx.lineWidth = 3 * z;
-      ctx.stroke();
-
-      // Radiant elemental ground fracture lines
+      // Radiant elemental ground fracture lines (No concentric circle rings)
       for (let f = 0; f < 6; f++) {
         const fracAng = (Math.PI * 2 / 6) * f + (f % 2 === 0 ? 0.2 : -0.2);
         const fx = Math.cos(fracAng) * radius * 0.9;

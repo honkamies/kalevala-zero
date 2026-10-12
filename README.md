@@ -141,6 +141,32 @@
 
 ---
 
+## 🎮 Controls & Controller Support
+
+Kalevala-Zero features **hot-swappable dual input support**. You can use Keyboard & Mouse, an Xbox / Gamepad controller, or switch back and forth dynamically at any time:
+
+| Action | ⌨️ Keyboard & Mouse | 🎮 Xbox Controller |
+| :--- | :--- | :--- |
+| **Movement** | `W`, `A`, `S`, `D` / `Arrow Keys` | **Left Analog Stick / D-Pad** |
+| **Aiming** | Mouse Pointer (`mousemove`) | **Right Analog Stick (360° Twin-Stick)** |
+| **Primary Attack** | Left Mouse Button (Hold to Charge) | **Right Trigger (RT)** |
+| **Special / Shield** | Right Mouse Button (RMB) | **Left Trigger (LT)** |
+| **Active Dodge Roll** | `Spacebar` | **Button B** |
+| **Interact / Decrypt** | `E` | **Button A** |
+| **Skill 1 (Ukonvasara EMP)** | `1` | **Button X** |
+| **Skill 2 (Kipinä Dash)** | `2` | **Right Bumper (RB)** |
+| **Skill 3 (Tuoni Void Shield)**| `3` | **Left Bumper (LB)** |
+| **Skill 4 (Overclock)** | `4` / `R` | **Button Y** |
+| **Nano-Repair Potion** | `Q` / `5` | **D-Pad Up / Left Stick Click (L3)** |
+| **Tactical Inventory** | `I` / `Tab` | **View (Back) Button** |
+| **Character Sheet** | `C` | **D-Pad Left** |
+| **Nanite Forge / Crafting** | `F` | **D-Pad Right** |
+| **Tactical Pause / ESC** | `Escape` | **Menu (Start) Button** |
+| **Camera Zoom** | Scroll Wheel / `[` `]` | **Right Stick Click (R3)** |
+| **Haptic Feedback** | N/A | **Dual-Rumble Vibration** on damage & rolls |
+
+---
+
 ## 🚀 Running & Deployment
 
 ### Local Development Server

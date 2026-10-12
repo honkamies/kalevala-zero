@@ -7,11 +7,11 @@ export class PlatformerCamera {
   public targetX: number = 0;
   public targetY: number = 0;
 
-  // Zoom control (Spacious default field of view for generous platforming awareness)
-  public zoom: number = 0.75;
-  public targetZoom: number = 0.75;
-  public minZoom: number = 0.50;
-  public maxZoom: number = 1.30;
+  // Zoom control (Spacious default field of view and wide zoom limits)
+  public zoom: number = 0.55;
+  public targetZoom: number = 0.55;
+  public minZoom: number = 0.25;
+  public maxZoom: number = 1.50;
 
   public viewportWidth: number = 480;
   public viewportHeight: number = 270;

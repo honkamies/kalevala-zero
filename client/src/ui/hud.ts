@@ -60,6 +60,7 @@ export class HUD {
   private cdPotEl!: HTMLElement;
   private potCountEl!: HTMLElement;
   private arsenalTextEl!: HTMLElement;
+  public isGamepadActive: boolean = false;
 
   constructor(root: HTMLElement) {
     this.root = root;
@@ -352,14 +353,20 @@ export class HUD {
     this.interactionBarEl.style.setProperty('--prompt-glow-color', `${color}55`);
 
     if (this.promptKeycapEl) {
-      this.promptKeycapEl.textContent = options.key || 'E';
       if (options.key === '🔒') {
+        this.promptKeycapEl.textContent = '🔒';
         this.promptKeycapEl.style.background = '#ef4444';
         this.promptKeycapEl.style.color = '#ffffff';
       } else if (options.key === '✓') {
+        this.promptKeycapEl.textContent = '✓';
         this.promptKeycapEl.style.background = '#10b981';
         this.promptKeycapEl.style.color = '#ffffff';
+      } else if (this.isGamepadActive && (!options.key || options.key === 'E')) {
+        this.promptKeycapEl.textContent = 'A';
+        this.promptKeycapEl.style.background = '#22c55e'; // Xbox Green A Button
+        this.promptKeycapEl.style.color = '#ffffff';
       } else {
+        this.promptKeycapEl.textContent = options.key || 'E';
         this.promptKeycapEl.style.background = color;
         this.promptKeycapEl.style.color = '#0f172a';
       }
@@ -405,6 +412,31 @@ export class HUD {
     }
 
     this.interactionBarEl.classList.add('visible');
+  }
+
+  public updateInputDeviceGlyphs(isGamepad: boolean) {
+    this.isGamepadActive = isGamepad;
+
+    const shieldKey = document.querySelector('#slot-ability-shield .ability-key');
+    if (shieldKey) shieldKey.textContent = isGamepad ? 'LT' : 'RMB';
+
+    const specialKey = document.querySelector('#slot-ability-special .ability-key');
+    if (specialKey) specialKey.textContent = isGamepad ? 'RT' : 'HOLD';
+
+    const key1 = document.querySelector('#slot-ability-1 .ability-key');
+    if (key1) key1.textContent = isGamepad ? 'X' : '1';
+
+    const key2 = document.querySelector('#slot-ability-2 .ability-key');
+    if (key2) key2.textContent = isGamepad ? 'RB' : '2';
+
+    const key3 = document.querySelector('#slot-ability-3 .ability-key');
+    if (key3) key3.textContent = isGamepad ? 'LB' : '3';
+
+    const key4 = document.querySelector('#slot-ability-4 .ability-key');
+    if (key4) key4.textContent = isGamepad ? 'Y' : '4';
+
+    const keyPot = document.querySelector('#slot-potion .ability-key');
+    if (keyPot) keyPot.textContent = isGamepad ? 'D-↑' : 'Q';
   }
 
   clearInteractionPrompt() {
@@ -883,12 +915,12 @@ export class HUD {
       top: 50%;
       left: 50%;
       transform: translate(-50%, -50%) scale(0.9);
-      width: 640px;
-      max-width: 95vw;
+      width: 560px;
+      max-width: 92vw;
       background: linear-gradient(180deg, rgba(15, 23, 42, 0.98) 0%, rgba(9, 14, 23, 0.98) 100%);
       border: 2px solid ${isFinalBoss ? '#fbbf24' : '#f59e0b'};
-      border-radius: 12px;
-      padding: 26px 30px;
+      border-radius: 10px;
+      padding: 24px 28px;
       box-shadow: 0 0 60px rgba(245, 158, 11, 0.6), 0 20px 80px rgba(0, 0, 0, 0.9);
       display: flex;
       flex-direction: column;
@@ -1028,27 +1060,29 @@ export class HUD {
     bannerEl.id = 'hud-boss-awakening-banner';
     bannerEl.style.cssText = `
       position: absolute;
-      top: 18%;
+      top: 15%;
       left: 50%;
       transform: translateX(-50%);
-      background: linear-gradient(90deg, rgba(220, 38, 38, 0) 0%, rgba(220, 38, 38, 0.95) 20%, rgba(15, 23, 42, 0.98) 50%, rgba(220, 38, 38, 0.95) 80%, rgba(220, 38, 38, 0) 100%);
-      border-top: 2px solid ${isFinalBoss ? '#fbbf24' : '#ef4444'};
-      border-bottom: 2px solid ${isFinalBoss ? '#fbbf24' : '#ef4444'};
+      width: 540px;
+      max-width: 90vw;
+      background: linear-gradient(180deg, rgba(22, 6, 12, 0.98) 0%, rgba(12, 3, 6, 0.99) 100%);
+      border: 2px solid ${isFinalBoss ? '#fbbf24' : '#ef4444'};
+      border-radius: 10px;
       color: #ffffff;
-      padding: 16px 70px;
+      padding: 18px 24px;
       font-family: var(--font-rune);
-      font-size: 22px;
-      letter-spacing: 2.5px;
-      text-shadow: 0 0 20px rgba(239,68,68,0.9), 0 0 40px rgba(245,158,11,0.8);
-      box-shadow: 0 0 50px rgba(239,68,68,0.8);
+      font-size: 20px;
+      letter-spacing: 2px;
+      text-shadow: 0 0 16px rgba(239,68,68,0.8), 0 0 30px rgba(245,158,11,0.6);
+      box-shadow: 0 16px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(239,68,68,0.4);
       text-align: center;
       z-index: 9000;
       pointer-events: auto;
-      animation: pulseGlow 0.4s infinite alternate;
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 3px;
+      gap: 4px;
+      box-sizing: border-box;
     `;
 
     bannerEl.innerHTML = `

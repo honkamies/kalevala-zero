@@ -20,7 +20,7 @@ export interface AudioSettings {
   shuffleMode: boolean; // True: random shuffle across entire library; False: biome contextual
 }
 
-const STORAGE_KEY = 'sampo_zero_audio_settings_v2';
+const STORAGE_KEY = 'sampo_zero_audio_settings_v3';
 
 export const MUSIC_PLAYLIST: MusicTrackInfo[] = [
   {
@@ -103,16 +103,20 @@ export const MUSIC_PLAYLIST: MusicTrackInfo[] = [
 ];
 
 export class SoundEngine {
+  // Sound Effects feature toggle: Temporarily disabled per user instruction until customized SFX are designed.
+  // When false, background music plays normally while all sound effects are silenced.
+  public static readonly SFX_ENABLED: boolean = false;
+
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
   private sfxGain: GainNode | null = null;
   private compressor: DynamicsCompressorNode | null = null;
 
-  // Settings (Defaults: Master 30%, Background Music 40%, Effects 50%)
+  // Settings (Defaults: Master 30%, Background Music 40%, Effects 0% - SFX Silenced)
   private settings: AudioSettings = {
     masterVolume: 0.30,
     musicVolume: 0.40,
-    sfxVolume: 0.50,
+    sfxVolume: 0.0,
     muted: false,
     shuffleMode: true
   };
@@ -302,6 +306,7 @@ export class SoundEngine {
   }
 
   public async preloadAllSamples(): Promise<void> {
+    if (!SoundEngine.SFX_ENABLED) return;
     if (this.isPreloaded) return;
     if (!this.ctx) this.init();
     if (!this.ctx) return;
@@ -359,6 +364,11 @@ export class SoundEngine {
         this.settings = { ...this.settings, ...parsed };
       }
     } catch (e) {}
+
+    // Enforce SFX muted / silenced when SFX_ENABLED is false
+    if (!SoundEngine.SFX_ENABLED) {
+      this.settings.sfxVolume = 0.0;
+    }
   }
 
   private saveSettings() {
@@ -375,7 +385,8 @@ export class SoundEngine {
       this.masterGain.gain.setValueAtTime(effectiveMaster, this.ctx.currentTime);
     }
     if (this.ctx && this.sfxGain) {
-      this.sfxGain.gain.setValueAtTime(this.settings.sfxVolume, this.ctx.currentTime);
+      const effectiveSfx = SoundEngine.SFX_ENABLED ? this.settings.sfxVolume : 0.0;
+      this.sfxGain.gain.setValueAtTime(effectiveSfx, this.ctx.currentTime);
     }
 
     // Update active music deck volume
@@ -403,7 +414,11 @@ export class SoundEngine {
   }
 
   public setSfxVolume(val: number) {
-    this.settings.sfxVolume = Math.max(0, Math.min(1, val));
+    if (!SoundEngine.SFX_ENABLED) {
+      this.settings.sfxVolume = 0.0;
+    } else {
+      this.settings.sfxVolume = Math.max(0, Math.min(1, val));
+    }
     this.updateGains();
     this.saveSettings();
   }
@@ -730,7 +745,7 @@ export class SoundEngine {
     volume: number = 0.85,
     type: OscillatorType = 'triangle'
   ) {
-    if (!this.ctx || this.settings.muted) return;
+    if (!SoundEngine.SFX_ENABLED || !this.ctx || this.settings.muted || this.settings.sfxVolume <= 0) return;
     this.resume();
     try {
       const now = this.ctx.currentTime;
@@ -760,7 +775,7 @@ export class SoundEngine {
     q: number = 2.0,
     volume: number = 0.75
   ) {
-    if (!this.ctx || this.settings.muted) return;
+    if (!SoundEngine.SFX_ENABLED || !this.ctx || this.settings.muted || this.settings.sfxVolume <= 0) return;
     this.resume();
     try {
       const noiseBuf = this.getNoiseBuffer();
@@ -796,7 +811,7 @@ export class SoundEngine {
 
   // Multi-Stage Biomechanical Rupture & Bone Shatter
   public triggerBoneShatterBurst(duration: number = 0.16, volume: number = 0.85) {
-    if (!this.ctx || this.settings.muted) return;
+    if (!SoundEngine.SFX_ENABLED || !this.ctx || this.settings.muted || this.settings.sfxVolume <= 0) return;
     this.resume();
     try {
       this.triggerCrunchNoise(1200, duration * 0.7, 1.8, volume * 0.9);
@@ -817,7 +832,7 @@ export class SoundEngine {
       playbackRate?: number;
     }
   ): boolean {
-    if (!this.ctx || this.settings.muted) return false;
+    if (!SoundEngine.SFX_ENABLED || !this.ctx || this.settings.muted || this.settings.sfxVolume <= 0) return false;
     this.resume();
 
     const now = performance.now();

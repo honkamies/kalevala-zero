@@ -30,8 +30,8 @@ export class PuzzleUI {
     this.modalEl = document.createElement('div');
     this.modalEl.className = 'sampo-modal interactive';
     this.modalEl.style.cssText = `
-      width: 720px;
-      max-width: 95vw;
+      width: 600px;
+      max-width: 92vw;
       height: 640px;
       max-height: 92vh;
       background: linear-gradient(180deg, rgba(13, 18, 29, 0.98) 0%, rgba(8, 12, 20, 0.98) 100%);

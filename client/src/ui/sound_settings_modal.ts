@@ -122,10 +122,10 @@ export class SoundSettingsModalUI {
           <!-- SFX Volume -->
           <div style="display:flex; flex-direction:column; gap:6px;">
             <div style="display:flex; justify-content:space-between; align-items:center; font-size:12px; font-family:var(--font-mono);">
-              <span style="color:#fff; font-weight:700;">💥 SOUND EFFECTS (SFX)</span>
-              <span id="txt-val-sfx" style="color:var(--cyan-core); font-weight:700;">${Math.round(settings.sfxVolume * 100)}%</span>
+              <span style="color:#fff; font-weight:700;">💥 SOUND EFFECTS (SFX) <span style="font-size:10px; color:#f59e0b; font-weight:normal;">[MUTED - BGM ONLY ACTIVE]</span></span>
+              <span id="txt-val-sfx" style="color:#94a3b8; font-weight:700;">0% (Muted)</span>
             </div>
-            <input type="range" id="slider-vol-sfx" min="0" max="100" value="${Math.round(settings.sfxVolume * 100)}" class="sampo-volume-slider" style="width:100%; cursor:pointer;" />
+            <input type="range" id="slider-vol-sfx" min="0" max="100" value="0" disabled class="sampo-volume-slider" style="width:100%; cursor:not-allowed; opacity:0.5;" title="Sound effects temporarily silenced until new sound effects are implemented" />
           </div>
 
           <!-- Quick Actions: Mute & Shuffle Toggle -->

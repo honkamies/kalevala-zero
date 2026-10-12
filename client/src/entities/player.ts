@@ -3,6 +3,7 @@ import { soundEngine } from '../engine/audio';
 import { particleSystem } from '../engine/particles';
 import { projectileManager } from './projectile';
 import { combatEngine } from '../systems/combat';
+import { inputManager } from '../engine/input';
 
 export interface CharacterAppearance {
   phenotype: string;
@@ -1312,6 +1313,7 @@ export class Player {
     this.shieldRegenDelayTimer = this.appearance.archetype === 'tietäjä' ? 2.0 : 3.5;
     soundEngine.playHitImpact(false);
     particleSystem.emitSplatter(this.x, this.y, '#dc2626', false);
+    inputManager.vibrate(140, 0.4, 0.45);
 
     // Shield absorbs first
     if (this.shield > 0) {

@@ -75,6 +75,7 @@ export class SampoGame {
   private loadingScreen: LoadingScreenUI;
   private victoryModalEl: HTMLElement | null = null;
   public platformerMode: PlatformerMode;
+  private lastActiveInputDevice: 'keyboard' | 'gamepad' = 'keyboard';
 
   // Sector Objectives & Swarm Wave Director
   public kills: number = 0;
@@ -604,6 +605,17 @@ export class SampoGame {
       }
     }, true);
 
+    // Xbox & Gamepad Controller Connection Notifications
+    inputManager.onGamepadConnected((gp) => {
+      const cleanName = gp.id.split('(')[0].trim() || 'Xbox Controller';
+      this.hud.addLog(`🎮 Controller Connected: ${cleanName}`, 'system');
+      inputManager.vibrate(180, 0.4, 0.4);
+    });
+
+    inputManager.onGamepadDisconnected(() => {
+      this.hud.addLog('🎮 Controller Disconnected - Reverted to Keyboard & Mouse', 'system');
+    });
+
     // Inventory: I / Tab
     inputManager.onAction('i', () => { if (this.player && !this.pauseMenuUI.isOpen()) this.inventoryUI.toggle(this.player); });
     inputManager.onAction('tab', () => { if (this.player && !this.pauseMenuUI.isOpen()) this.inventoryUI.toggle(this.player); });
@@ -636,7 +648,7 @@ export class SampoGame {
       this.hud.addLog(`Master Audio ${muted ? 'Muted' : 'Unmuted'}`, 'system');
     });
 
-    // Dodge Roll: Space
+    // Dodge Roll: Space / Gamepad Button B
     inputManager.onAction(' ', () => {
       if (this.player && !this.isAnyModalOpen()) {
         let move = inputManager.getMovementVector();
@@ -650,7 +662,10 @@ export class SampoGame {
           }
         }
         const rolled = this.player.dodge(move.dx, move.dy);
-        if (rolled) this.hud.addLog('Executed Active Dodge Roll (I-Frames)', 'skill');
+        if (rolled) {
+          this.hud.addLog('Executed Active Dodge Roll (I-Frames)', 'skill');
+          inputManager.vibrate(90, 0.3, 0.3);
+        }
       }
     });
 
@@ -712,10 +727,6 @@ export class SampoGame {
     };
 
     inputManager.onWheel((delta) => {
-      if (this.platformerMode && this.platformerMode.isActive) {
-        // Disabled mouse scroll zoom in platformer mode per user request
-        return;
-      }
       adjustZoom(delta);
     });
 
@@ -2004,6 +2015,7 @@ export class SampoGame {
     this.player.isDying = true;
     this.player.health = 0;
     this.player.shield = 0;
+    inputManager.vibrate(400, 0.7, 0.9);
 
     // Immediately terminate all background music, ambient drones, loops, and gameplay audio
     soundEngine.stopAllSounds(0.02);
@@ -2073,83 +2085,84 @@ export class SampoGame {
 
     this.defeatModalEl.innerHTML = `
       <div style="
-        background: linear-gradient(180deg, rgba(22, 6, 10, 0.97) 0%, rgba(12, 3, 5, 0.98) 100%);
-        border: 1.5px solid rgba(239, 68, 68, 0.7);
-        border-radius: 8px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(239, 68, 68, 0.3);
-        max-width: 290px;
-        width: 88%;
-        padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(22, 6, 12, 0.98) 0%, rgba(12, 3, 6, 0.99) 100%);
+        border: 2px solid rgba(239, 68, 68, 0.75);
+        border-radius: 10px;
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(239, 68, 68, 0.35);
+        width: 540px;
+        max-width: 92vw;
+        padding: 24px 28px;
         text-align: center;
         position: relative;
         animation: fadeIn 0.25s ease-out;
         pointer-events: auto;
+        box-sizing: border-box;
       ">
         <!-- Close [X] Button -->
         <button id="btn-defeat-close-x" title="Close Window (ESC)" style="
           position: absolute;
-          top: 8px;
-          right: 10px;
+          top: 12px;
+          right: 14px;
           background: none;
           border: none;
           color: #f87171;
-          font-size: 18px;
+          font-size: 22px;
           font-weight: 300;
           cursor: pointer;
-          padding: 2px 4px;
+          padding: 2px 6px;
           line-height: 1;
           transition: color 0.15s;
         ">&times;</button>
 
-        <div style="font-size: 9px; font-family: var(--font-mono); letter-spacing: 1.5px; color: #f87171; margin-bottom: 2px;">
-          ⚠️ VESSEL COLLAPSED
+        <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2px; color: #f87171; margin-bottom: 4px; text-transform: uppercase;">
+          ⚠️ VESSEL COLLAPSED // RECONSTRUCTION REQUIRED
         </div>
-        <div style="font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); margin-bottom: 8px;">
+        <div style="font-size: 24px; font-weight: 800; letter-spacing: 1.5px; color: #ef4444; text-shadow: 0 0 14px rgba(239, 68, 68, 0.6); margin-bottom: 12px; font-family: var(--font-rune);">
           ${this.player ? this.player.name.toUpperCase() : 'OPERATIVE'} FALLEN
         </div>
 
         <!-- Combat Autopsy Line -->
         <div style="
-          background: rgba(239, 68, 68, 0.1);
-          border: 1px solid rgba(239, 68, 68, 0.25);
-          border-radius: 5px;
-          padding: 6px 10px;
-          margin-bottom: 8px;
+          background: rgba(239, 68, 68, 0.12);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 6px;
+          padding: 10px 14px;
+          margin-bottom: 14px;
           text-align: left;
-          font-size: 11px;
+          font-size: 12.5px;
         ">
-          <div style="color: #f1f5f9; font-weight: 700;">
+          <div style="color: #f1f5f9; font-weight: 700; font-size: 13.5px;">
             Slain by <span style="color: #fca5a5;">${fatal.killerName}</span>
           </div>
-          <div style="font-size: 10px; font-family: var(--font-mono); color: #94a3b8; margin-top: 2px;">
-            Fatal Hit: <strong style="color: #ffffff;">-${fatal.amount}</strong> <span style="color: ${typeColor}; font-weight: 700;">[${dmgTypeStr}]</span> &bull; ${currentBiome.name}
+          <div style="font-size: 11.5px; font-family: var(--font-mono); color: #cbd5e1; margin-top: 4px;">
+            Fatal Damage: <strong style="color: #ffffff;">-${fatal.amount}</strong> <span style="color: ${typeColor}; font-weight: 700;">[${dmgTypeStr}]</span> &bull; Sector: <strong>${currentBiome.name}</strong>
           </div>
         </div>
 
-        <!-- Compact Stats Bar -->
+        <!-- Standard Stats Bar -->
         <div style="
           display: flex;
           justify-content: space-around;
-          background: rgba(0, 0, 0, 0.45);
+          background: rgba(0, 0, 0, 0.5);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 5px;
-          padding: 5px 8px;
-          margin-bottom: 12px;
+          border-radius: 6px;
+          padding: 10px 14px;
+          margin-bottom: 18px;
           font-family: var(--font-mono);
-          font-size: 10px;
+          font-size: 12px;
         ">
-          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 11px;">${this.player ? this.player.level : 1}</strong></div>
-          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 11px;">${this.kills}</strong></div>
-          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 11px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
+          <div><span style="color: #94a3b8;">LEVEL </span><strong style="color: #f59e0b; font-size: 13px;">${this.player ? this.player.level : 1}</strong></div>
+          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 13px;">${this.kills}</strong></div>
+          <div><span style="color: #94a3b8;">NANITE SCRAP </span><strong style="color: #38bdf8; font-size: 13px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 6px; justify-content: center;">
-          <button id="btn-defeat-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 10px rgba(239, 68, 68, 0.35); padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
-            🔄 RETRY
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button id="btn-defeat-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 14px rgba(239, 68, 68, 0.4); padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; pointer-events: auto; flex: 1;">
+            🔄 RETRY SECTOR
           </button>
-          <button id="btn-defeat-menu" class="sampo-btn" style="padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
-            🚀 SAGA COMMAND
+          <button id="btn-defeat-menu" class="sampo-btn" style="padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; pointer-events: auto; flex: 1;">
+            🚀 SAGA OVERVIEW
           </button>
         </div>
       </div>
@@ -2235,68 +2248,79 @@ export class SampoGame {
 
     this.collapseModalEl.innerHTML = `
       <div style="
-        background: linear-gradient(180deg, rgba(24, 8, 12, 0.97) 0%, rgba(12, 3, 5, 0.98) 100%);
-        border: 1.5px solid rgba(239, 68, 68, 0.7);
-        border-radius: 8px;
-        box-shadow: 0 8px 30px rgba(0, 0, 0, 0.8), 0 0 16px rgba(239, 68, 68, 0.3);
-        max-width: 290px;
-        width: 88%;
-        padding: 14px 16px;
+        background: linear-gradient(180deg, rgba(24, 8, 14, 0.98) 0%, rgba(12, 3, 6, 0.99) 100%);
+        border: 2px solid rgba(239, 68, 68, 0.75);
+        border-radius: 10px;
+        box-shadow: 0 16px 50px rgba(0, 0, 0, 0.9), 0 0 30px rgba(239, 68, 68, 0.35);
+        width: 540px;
+        max-width: 92vw;
+        padding: 24px 28px;
         text-align: center;
         position: relative;
         animation: fadeIn 0.25s ease-out;
         pointer-events: auto;
+        box-sizing: border-box;
       ">
         <!-- Close [X] Button -->
         <button id="btn-collapse-close-x" title="Close Window (ESC)" style="
           position: absolute;
-          top: 8px;
-          right: 10px;
+          top: 12px;
+          right: 14px;
           background: none;
           border: none;
           color: #f87171;
-          font-size: 18px;
+          font-size: 22px;
           font-weight: 300;
           cursor: pointer;
-          padding: 2px 4px;
+          padding: 2px 6px;
           line-height: 1;
           transition: color 0.15s;
         ">&times;</button>
 
-        <div style="font-size: 9px; font-family: var(--font-mono); letter-spacing: 1.5px; color: #f87171; margin-bottom: 2px;">
-          ⚠️ TIME EXPIRED
+        <div style="font-size: 11px; font-family: var(--font-mono); letter-spacing: 2px; color: #f87171; margin-bottom: 4px; text-transform: uppercase;">
+          ⚠️ TIME EXPIRED // TEMPORAL MATRIX COLLAPSED
         </div>
-        <div style="font-size: 15px; font-weight: 800; letter-spacing: 1px; color: #ef4444; text-shadow: 0 0 10px rgba(239, 68, 68, 0.5); margin-bottom: 6px;">
+        <div style="font-size: 24px; font-weight: 800; letter-spacing: 1.5px; color: #ef4444; text-shadow: 0 0 14px rgba(239, 68, 68, 0.6); margin-bottom: 12px; font-family: var(--font-rune);">
           REALM COLLAPSED
         </div>
-        <div style="font-size: 10.5px; color: #cbd5e1; line-height: 1.35; margin-bottom: 8px;">
-          Extraction portal unreachable in time. Dimensional fabric disintegrated.
+        <div style="
+          background: rgba(239, 68, 68, 0.12);
+          border: 1px solid rgba(239, 68, 68, 0.3);
+          border-radius: 6px;
+          padding: 10px 14px;
+          margin-bottom: 14px;
+          text-align: left;
+          font-size: 12.5px;
+          color: #cbd5e1;
+          line-height: 1.45;
+        ">
+          Extraction portal unreachable in time. The local reality fabric disintegrated before evacuation was completed.
         </div>
 
-        <!-- Compact Stats Bar -->
+        <!-- Standard Stats Bar -->
         <div style="
           display: flex;
           justify-content: space-around;
-          background: rgba(0, 0, 0, 0.45);
+          background: rgba(0, 0, 0, 0.5);
           border: 1px solid rgba(255, 255, 255, 0.08);
-          border-radius: 5px;
-          padding: 5px 8px;
-          margin-bottom: 12px;
+          border-radius: 6px;
+          padding: 10px 14px;
+          margin-bottom: 18px;
           font-family: var(--font-mono);
-          font-size: 10px;
+          font-size: 12px;
         ">
-          <div><span style="color: #94a3b8;">LVL </span><strong style="color: #f59e0b; font-size: 11px;">${this.player ? this.player.level : 1}</strong></div>
-          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 11px;">${this.kills}</strong></div>
-          <div><span style="color: #94a3b8;">SCRAP </span><strong style="color: #38bdf8; font-size: 11px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
+          <div><span style="color: #94a3b8;">LEVEL </span><strong style="color: #f59e0b; font-size: 13px;">${this.player ? this.player.level : 1}</strong></div>
+          <div><span style="color: #94a3b8;">KILLS </span><strong style="color: #ef4444; font-size: 13px;">${this.kills}</strong></div>
+          <div><span style="color: #94a3b8;">NANITE SCRAP </span><strong style="color: #38bdf8; font-size: 13px;">+${this.player ? this.player.naniteScrap : 0}</strong></div>
         </div>
 
         <!-- Action Buttons -->
-        <div style="display: flex; gap: 6px; justify-content: center;">
-          <button id="btn-collapse-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 10px rgba(239, 68, 68, 0.35); padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
+        <div style="display: flex; gap: 10px; justify-content: center;">
+          <button id="btn-collapse-retry" class="sampo-btn primary" style="background: linear-gradient(135deg, #ef4444, #b91c1c); border-color: #f87171; box-shadow: 0 0 14px rgba(239, 68, 68, 0.4); padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; pointer-events: auto; flex: 1;">
             🔄 RESTART REALM
           </button>
-          <button id="btn-collapse-menu" class="sampo-btn" style="padding: 7px 12px; font-size: 11px; cursor: pointer; pointer-events: auto; flex: 1;">
-            🚀 SAGA MENU
+          <button id="btn-collapse-menu" class="sampo-btn" style="padding: 10px 18px; font-size: 13px; font-weight: 700; cursor: pointer; pointer-events: auto; flex: 1;">
+            🚀 SAGA OVERVIEW
           </button>
         </div>
       </div>
@@ -2385,18 +2409,19 @@ export class SampoGame {
     this.victoryModalEl.innerHTML = `
       <div style="
         position: relative;
-        width: 700px; 
+        width: 560px; 
         max-width: 92vw; 
         background: rgba(13, 18, 29, 0.98); 
         border: 2px solid var(--gold-runic); 
         border-radius: 10px; 
-        padding: 28px; 
+        padding: 24px 28px; 
         box-shadow: 0 0 40px rgba(245, 158, 11, 0.4), 0 25px 50px rgba(0,0,0,0.9);
         text-align: center;
         display: flex;
         flex-direction: column;
         gap: 14px;
         pointer-events: auto;
+        box-sizing: border-box;
       ">
         <!-- Close [X] Button -->
         <button id="btn-victory-close-x" title="Close Window (ESC)" style="
@@ -2743,6 +2768,13 @@ export class SampoGame {
       }
     }
 
+    // Poll Xbox and Gamepad Controllers each frame
+    inputManager.updateGamepads();
+    if (inputManager.lastInputDevice !== this.lastActiveInputDevice) {
+      this.lastActiveInputDevice = inputManager.lastInputDevice;
+      this.hud.updateInputDeviceGlyphs(this.lastActiveInputDevice === 'gamepad');
+    }
+
     if (this.platformerMode && this.platformerMode.isActive) {
       if (!this.isAnyModalOpen()) {
         this.platformerMode.update(rawDt);
@@ -2852,9 +2884,62 @@ export class SampoGame {
     // Accumulate elapsed expedition run time
     this.sectorRunTime += dt;
 
-    // 1. Player Input & Aiming
-    const mouseWorld = this.camera.screenToWorld(inputManager.mouseScreen.x, inputManager.mouseScreen.y);
-    this.player.angle = Math.atan2(mouseWorld.y - this.player.y, mouseWorld.x - this.player.x);
+    // 1. Player Input & Aiming (Gamepad twin-stick or Mouse cursor)
+    let move = inputManager.getMovementVector();
+    let mouseWorld: { x: number; y: number };
+
+    if (inputManager.lastInputDevice === 'gamepad') {
+      const rs = inputManager.getRightStick();
+      const isAiming = inputManager.isRightStickAiming();
+
+      if (isAiming) {
+        // Active Right Stick Aim: map 2D screen stick (rx right, ry down) to 2:1 isometric world space
+        const worldDx = rs.y + rs.x;
+        const worldDy = rs.y - rs.x;
+        const aimAngle = Math.atan2(worldDy, worldDx);
+        const aimDist = 6.0;
+        const targetX = this.player.x + Math.cos(aimAngle) * aimDist;
+        const targetY = this.player.y + Math.sin(aimAngle) * aimDist;
+        const screenPos = this.camera.worldToScreen(targetX, targetY, 0);
+        inputManager.mouseScreen.x = screenPos.x;
+        inputManager.mouseScreen.y = screenPos.y;
+        inputManager.mouseWorld.x = targetX;
+        inputManager.mouseWorld.y = targetY;
+        this.player.angle = aimAngle;
+        inputManager.lastGamepadAimAngle = aimAngle;
+        mouseWorld = { x: targetX, y: targetY };
+      } else if (move.dx !== 0 || move.dy !== 0) {
+        // Right stick idle & player moving: aim in movement direction
+        const moveAngle = Math.atan2(move.dy, move.dx);
+        const aimDist = 5.0;
+        const targetX = this.player.x + Math.cos(moveAngle) * aimDist;
+        const targetY = this.player.y + Math.sin(moveAngle) * aimDist;
+        const screenPos = this.camera.worldToScreen(targetX, targetY, 0);
+        inputManager.mouseScreen.x = screenPos.x;
+        inputManager.mouseScreen.y = screenPos.y;
+        inputManager.mouseWorld.x = targetX;
+        inputManager.mouseWorld.y = targetY;
+        this.player.angle = moveAngle;
+        inputManager.lastGamepadAimAngle = moveAngle;
+        mouseWorld = { x: targetX, y: targetY };
+      } else {
+        // Standing still, maintain last aim direction
+        const aimAngle = inputManager.lastGamepadAimAngle || this.player.angle;
+        const aimDist = 5.0;
+        const targetX = this.player.x + Math.cos(aimAngle) * aimDist;
+        const targetY = this.player.y + Math.sin(aimAngle) * aimDist;
+        const screenPos = this.camera.worldToScreen(targetX, targetY, 0);
+        inputManager.mouseScreen.x = screenPos.x;
+        inputManager.mouseScreen.y = screenPos.y;
+        inputManager.mouseWorld.x = targetX;
+        inputManager.mouseWorld.y = targetY;
+        this.player.angle = aimAngle;
+        mouseWorld = { x: targetX, y: targetY };
+      }
+    } else {
+      mouseWorld = this.camera.screenToWorld(inputManager.mouseScreen.x, inputManager.mouseScreen.y);
+      this.player.angle = Math.atan2(mouseWorld.y - this.player.y, mouseWorld.x - this.player.x);
+    }
 
     // Special Attack on Right Click
     if (inputManager.justClickedRight && !this.isAnyModalOpen()) {
@@ -3095,7 +3180,7 @@ export class SampoGame {
       return this.world!.tiles[gy][gx] === TileType.WALL;
     };
 
-    let move = inputManager.getMovementVector();
+    move = inputManager.getMovementVector();
 
     // Middle Mouse Button Navigation: Move towards mouse pointer
     if (inputManager.isMouseDownMiddle) {
